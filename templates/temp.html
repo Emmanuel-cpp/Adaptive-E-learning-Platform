@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Function Overloading - CSU Learn</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+    
+    body {
+      background-color: #f5f7fa;
+      color: #333;
+      line-height: 1.6;
+      padding: 20px;
+    }
+    
+    .lesson-content {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 15px;
+      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
+      overflow: hidden;
+    }
+    
+    .lesson-header {
+      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+      color: white;
+      padding: 25px 30px;
+      position: relative;
+    }
+    
+    .lesson-title {
+      font-size: 32px;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+    
+    .lesson-subtitle {
+      font-size: 18px;
+      opacity: 0.9;
+      margin-bottom: 15px;
+    }
+    
+    .progress-container {
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 10px;
+      height: 12px;
+      margin-top: 15px;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #34d399, #10b981);
+      border-radius: 10px;
+      width: 52%;
+    }
+    
+    .lesson-section {
+      padding: 30px;
+      border-bottom: 1px solid #eaeaea;
+    }
+    
+    .section-title {
+      font-size: 24px;
+      color: #1e3a8a;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid #e0e7ff;
+      display: flex;
+      align-items: center;
+    }
+    
+    .section-title i {
+      margin-right: 10px;
+    }
+    
+    .section-content {
+      margin-left: 10px;
+    }
+    
+    .section-content p {
+      margin-bottom: 15px;
+      font-size: 17px;
+      color: #444;
+    }
+    
+    .code-block {
+      background: #1e293b;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      overflow-x: auto;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    }
+    
+    pre {
+      color: #e2e8f0;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 15px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+    }
+    
+    .code-keyword {
+      color: #60a5fa;
+      font-weight: bold;
+    }
+    
+    .code-function {
+      color: #c084fc;
+    }
+    
+    .code-string {
+      color: #34d399;
+    }
+    
+    .code-comment {
+      color: #94a3b8;
+      font-style: italic;
+    }
+    
+    .note-box, .warning-box {
+      padding: 18px;
+      border-radius: 10px;
+      margin: 25px 0;
+      position: relative;
+    }
+    
+    .note-box {
+      background: linear-gradient(to right, #f0fdf4, #dcfce7);
+      border-left: 4px solid #34d399;
+    }
+    
+    .warning-box {
+      background: linear-gradient(to right, #fef3c7, #fffbeb);
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .note-title, .warning-title {
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+      margin-bottom: 10px;
+      font-size: 18px;
+    }
+    
+    .note-title i {
+      color: #34d399;
+      margin-right: 10px;
+      font-size: 20px;
+    }
+    
+    .warning-title i {
+      color: #f59e0b;
+      margin-right: 10px;
+      font-size: 20px;
+    }
+    
+    .exercise-box {
+      background: linear-gradient(to right, #f5f3ff, #ede9fe);
+      border-radius: 12px;
+      padding: 25px;
+      margin: 30px 0;
+      border-left: 4px solid #8b5cf6;
+    }
+    
+    .exercise-title {
+      font-size: 22px;
+      color: #7c3aed;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .exercise-title i {
+      margin-right: 10px;
+    }
+    
+    .exercise-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    
+    .exercise-option {
+      background: white;
+      border: 2px dashed #cbd5e1;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: grab;
+      transition: all 0.3s ease;
+      font-family: 'Consolas', monospace;
+      font-size: 15px;
+      user-select: none;
+    }
+    
+    .exercise-option:hover {
+      background: #f1f5f9;
+      border-color: #8b5cf6;
+      transform: translateY(-3px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .exercise-option:active {
+      cursor: grabbing;
+    }
+    
+    .exercise-dropzone {
+      min-height: 60px;
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+      text-align: center;
+      font-size: 16px;
+      color: #64748b;
+      background: white;
+      transition: all 0.3s ease;
+    }
+    
+    .exercise-dropzone.active {
+      border-color: #8b5cf6;
+      background: #f5f3ff;
+      color: #7c3aed;
+    }
+    
+    .exercise-button {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    .exercise-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    }
+    
+    .exercise-feedback {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 500;
+      font-size: 17px;
+      display: none;
+    }
+    
+    .feedback-correct {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
+    
+    .feedback-incorrect {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      display: block;
+    }
+    
+    .key-points {
+      padding: 0 20px;
+      margin: 20px 0;
+    }
+    
+    .key-points li {
+      margin-bottom: 12px;
+      padding-left: 25px;
+      position: relative;
+      font-size: 17px;
+    }
+    
+    .key-points li:before {
+      content: "•";
+      color: #7c3aed;
+      font-size: 24px;
+      position: absolute;
+      left: 0;
+      top: -3px;
+    }
+    
+    .lesson-footer {
+      display: flex;
+      justify-content: space-between;
+      padding: 25px 30px;
+      background: #f8fafc;
+    }
+    
+    .nav-btn {
+      padding: 12px 25px;
+      border-radius: 8px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      text-decoration: none;
+      transition: all 0.3s ease;
+    }
+    
+    .prev-btn {
+      background: #e0e7ff;
+      color: #4f46e5;
+      border: 2px solid #c7d2fe;
+    }
+    
+    .prev-btn:hover {
+      background: #c7d2fe;
+    }
+    
+    .next-btn {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: white;
+    }
+    
+    .next-btn:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    }
+    
+    .dragging {
+      opacity: 0.5;
+      transform: scale(0.95);
+    }
+    
+    @media (max-width: 768px) {
+      .lesson-content {
+        border-radius: 10px;
+      }
+      
+      .lesson-header {
+        padding: 20px;
+      }
+      
+      .lesson-title {
+        font-size: 26px;
+      }
+      
+      .section-title {
+        font-size: 22px;
+      }
+      
+      .exercise-options {
+        flex-direction: column;
+      }
+      
+      .lesson-footer {
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      .nav-btn {
+        justify-content: center;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="lesson-content">
+    <div class="lesson-header">
+      <h1 class="lesson-title">Function Overloading</h1>
+      <p class="lesson-subtitle">Using the same function name for different operations</p>
+      <div class="progress-container">
+        <div class="progress-bar"></div>
+      </div>
+    </div>
+    
+    <div class="lesson-section">
+      <h2 class="section-title"><i class="fas fa-cogs"></i> Function Overloading</h2>
+      <div class="section-content">
+        <p>Function overloading allows multiple functions to have the same name, as long as their parameters are different in type or number. This lets you use the same function name for similar tasks.</p>
+        
+        <div class="note-box">
+          <div class="note-title">
+            <i class="fas fa-lightbulb"></i>
+            <span>Key Concept</span>
+          </div>
+          <p>Overloaded functions must differ in their parameter types or number of parameters. The return type alone is not sufficient to differentiate functions.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="lesson-section">
+      <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> Without Function Overloading</h2>
+      <div class="section-content">
+        <p>Consider this example with two functions that add numbers of different types:</p>
+        
+        <div class="code-block">
+          <pre><span class="code-keyword">int</span> <span class="code-function">plusFuncInt</span>(<span class="code-keyword">int</span> x, <span class="code-keyword">int</span> y) {
+    <span class="code-keyword">return</span> x + y;
+}
+
+<span class="code-keyword">double</span> <span class="code-function">plusFuncDouble</span>(<span class="code-keyword">double</span> x, <span class="code-keyword">double</span> y) {
+    <span class="code-keyword">return</span> x + y;
+}
+
+<span class="code-keyword">int</span> <span class="code-function">main</span>() {
+    <span class="code-keyword">int</span> myNum1 = <span class="code-function">plusFuncInt</span>(8, 5);
+    <span class="code-keyword">double</span> myNum2 = <span class="code-function">plusFuncDouble</span>(4.3, 6.26);
+
+    cout &lt;&lt; <span class="code-string">"Int: "</span> &lt;&lt; myNum1 &lt;&lt; endl;
+    cout &lt;&lt; <span class="code-string">"Double: "</span> &lt;&lt; myNum2;
+    <span class="code-keyword">return</span> 0;
+}</pre>
+        </div>
+
+        <div class="warning-box">
+          <div class="warning-title">
+            <i class="fas fa-exclamation-circle"></i>
+            <span>Problem</span>
+          </div>
+          <p>We had to create two different function names for essentially the same logic. This makes the API harder to remember and use.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="lesson-section">
+      <h2 class="section-title"><i class="fas fa-check-circle"></i> Using Function Overloading</h2>
+      <div class="section-content">
+        <p>Instead of defining two functions with different names, we can overload one function name to work for both int and double types:</p>
+        
+        <div class="code-block">
+          <pre><span class="code-keyword">int</span> <span class="code-function">plusFunc</span>(<span class="code-keyword">int</span> x, <span class="code-keyword">int</span> y) {
+    <span class="code-keyword">return</span> x + y;
+}
+
+<span class="code-keyword">double</span> <span class="code-function">plusFunc</span>(<span class="code-keyword">double</span> x, <span class="code-keyword">double</span> y) {
+    <span class="code-keyword">return</span> x + y;
+}
+
+<span class="code-keyword">int</span> <span class="code-function">main</span>() {
+    <span class="code-keyword">int</span> myNum1 = <span class="code-function">plusFunc</span>(8, 5);
+    <span class="code-keyword">double</span> myNum2 = <span class="code-function">plusFunc</span>(4.3, 6.26);
+
+    cout &lt;&lt; <span class="code-string">"Int: "</span> &lt;&lt; myNum1 &lt;&lt; endl;
+    cout &lt;&lt; <span class="code-string">"Double: "</span> &lt;&lt; myNum2;
+    <span class="code-keyword">return</span> 0;
+}</pre>
+        </div>
+
+        <div class="note-box">
+          <div class="note-title">
+            <i class="fas fa-info-circle"></i>
+            <span>Important Note</span>
+          </div>
+          <p>Multiple functions can have the same name as long as the number and/or type of parameters are different. The compiler selects the appropriate function based on the arguments provided.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="lesson-section">
+      <h2 class="section-title"><i class="fas fa-sort-numeric-up"></i> Overloading by Number of Parameters</h2>
+      <div class="section-content">
+        <p>You can also overload functions by using a different number of parameters:</p>
+        
+        <div class="code-block">
+          <pre><span class="code-keyword">int</span> <span class="code-function">plusFunc</span>(<span class="code-keyword">int</span> x, <span class="code-keyword">int</span> y) {
+    <span class="code-keyword">return</span> x + y;
+}
+
+<span class="code-keyword">int</span> <span class="code-function">plusFunc</span>(<span class="code-keyword">int</span> x, <span class="code-keyword">int</span> y, <span class="code-keyword">int</span> z) {
+    <span class="code-keyword">return</span> x + y + z;
+}
+
+<span class="code-keyword">int</span> <span class="code-function">main</span>() {
+    <span class="code-keyword">int</span> result1 = <span class="code-function">plusFunc</span>(3, 7);
+    <span class="code-keyword">int</span> result2 = <span class="code-function">plusFunc</span>(1, 2, 3);
+
+    cout &lt;&lt; <span class="code-string">"Sum of 2 numbers: "</span> &lt;&lt; result1 &lt;&lt; endl;
+    cout &lt;&lt; <span class="code-string">"Sum of 3 numbers: "</span> &lt;&lt; result2;
+    <span class="code-keyword">return</span> 0;
+}</pre>
+        </div>
+      </div>
+    </div>
+
+    <div class="lesson-section">
+      <h2 class="section-title"><i class="fas fa-pencil-alt"></i> Exercise</h2>
+      <div class="section-content">
+        <p>Drag and drop the correct argument to call the overloaded function that greets by name.</p>
+        
+        <div class="code-block">
+          <pre><span class="code-keyword">void</span> <span class="code-function">greet</span>() {
+    cout &lt;&lt; <span class="code-string">"Hello!"</span>;
+}
+
+<span class="code-keyword">void</span> <span class="code-function">greet</span>(string name) {
+    cout &lt;&lt; <span class="code-string">"Hello, "</span> &lt;&lt; name;
+}
+
+<span class="code-keyword">int</span> <span class="code-function">main</span>() {
+    <span class="code-function">greet</span>();
+    <span class="code-comment">// Call the function that greets by name</span>
+    <span class="code-keyword">return</span> 0;
+}</pre>
+    </div>
+
+        <div class="exercise-box">
+          <div class="exercise-title">
+            <i class="fas fa-question-circle"></i>
+            Which of these would correctly call the function that greets by name?
+          </div>
+          
+          <div class="exercise-options">
+            <div class="exercise-option" draggable="true" data-correct="true">greet("Alice");</div>
+            <div class="exercise-option" draggable="true">greet(Alice);</div>
+            <div class="exercise-option" draggable="true">greet(string Alice);</div>
+            <div class="exercise-option" draggable="true">greet name("Alice");</div>
+          </div>
+          
+          <div class="exercise-dropzone" id="dropZone">Drag your answer here</div>
+          
+          <button class="exercise-button" id="checkBtn">Check Answer</button>
+          
+          <div class="exercise-feedback" id="feedback"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="lesson-section">
+      <h2 class="section-title"><i class="fas fa-key"></i> Key Takeaways</h2>
+      <div class="section-content">
+        <ul class="key-points">
+          <li>Function overloading allows multiple functions with the same name but different parameters</li>
+          <li>Parameters must differ in type, number, or both to allow overloading</li>
+          <li>Return type alone is <strong>not</strong> sufficient to differentiate overloaded functions</li>
+          <li>Overloading makes APIs more intuitive and reduces the need for unique function names</li>
+          <li>Compiler selects the appropriate function based on arguments provided</li>
+          <li>Overloading improves code readability and maintainability</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="lesson-footer">
+      <a href="#" class="nav-btn prev-btn">
+        <i class="fas fa-arrow-left"></i> Previous Lesson
+      </a>
+      <a href="#" class="nav-btn next-btn">
+        Next Lesson <i class="fas fa-arrow-right"></i>
+      </a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', function() {
+      // Drag and drop functionality
+      const options = document.querySelectorAll('.exercise-option');
+      const dropZone = document.getElementById('dropZone');
+      const checkBtn = document.getElementById('checkBtn');
+      const feedback = document.getElementById('feedback');
+      let draggedOption = null;
+      let correctOption = null;
+      
+      // Add event listeners for draggable options
+      options.forEach(option => {
+        option.addEventListener('dragstart', function(e) {
+          draggedOption = this;
+          this.classList.add('dragging');
+          e.dataTransfer.setData('text/plain', this.textContent);
+        });
+        
+        option.addEventListener('dragend', function() {
+          this.classList.remove('dragging');
+        });
+      });
+      
+      // Add event listeners for drop zone
+      dropZone.addEventListener('dragover', function(e) {
+        e.preventDefault();
+        this.classList.add('active');
+      });
+      
+      dropZone.addEventListener('dragleave', function() {
+        this.classList.remove('active');
+      });
+      
+      dropZone.addEventListener('drop', function(e) {
+        e.preventDefault();
+        this.classList.remove('active');
+        
+        if (draggedOption) {
+          // Clear previous content
+          this.innerHTML = '';
+          
+          // Create a clone of the dragged option
+          const clone = draggedOption.cloneNode(true);
+          clone.classList.remove('dragging');
+          clone.draggable = false;
+          clone.style.cursor = 'default';
+          clone.style.borderStyle = 'solid';
+          clone.style.borderColor = '#8b5cf6';
+          clone.style.backgroundColor = '#f5f3ff';
+          
+          this.appendChild(clone);
+          
+          // Store the correct status
+          correctOption = draggedOption.getAttribute('data-correct') === 'true';
+          
+          // Reset dragged option reference
+          draggedOption = null;
+        }
+      });
+      
+      // Check answer button
+      checkBtn.addEventListener('click', function() {
+        if (!dropZone.querySelector('.exercise-option')) {
+          feedback.textContent = 'Please drag an answer to the drop zone first!';
+          feedback.className = 'exercise-feedback feedback-incorrect';
+          return;
+        }
+        
+        if (correctOption) {
+          feedback.innerHTML = `
+            <i class="fas fa-check-circle"></i> Correct! 
+            You've successfully called the overloaded function that greets by name.
+          `;
+          feedback.className = 'exercise-feedback feedback-correct';
+        } else {
+          feedback.innerHTML = `
+            <i class="fas fa-times-circle"></i> Incorrect. 
+            The correct answer is: <strong>greet("Alice");</strong>
+          `;
+          feedback.className = 'exercise-feedback feedback-incorrect';
+        }
+      });
+    });
+  </script>
+</body>
+</html>
+
+ <!-- Display error messages -->
+            {% if messages %}
+            <div class="messages" style="margin:10px 0;">
+                {% for message in messages %}
+                <div 
+                    style="
+                        padding:10px 15px;
+                        margin-bottom:8px;
+                        border-radius:6px;
+                        font-size:14px;
+                        {% if message.tags == 'error' %}
+                            background:#fde2e1; 
+                            color:#a94442; 
+                            border:1px solid #f5c2c2;
+                        {% elif message.tags == 'success' %}
+                            background:#e2f7e1; 
+                            color:#2e7d32; 
+                            border:1px solid #a5d6a7;
+                        {% elif message.tags == 'warning' %}
+                            background:#fff8e1; 
+                            color:#856404; 
+                            border:1px solid #ffe58f;
+                        {% else %}
+                            background:#e7f3fe; 
+                            color:#31708f; 
+                            border:1px solid #b3d7ff;
+                        {% endif %}
+                    ">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
