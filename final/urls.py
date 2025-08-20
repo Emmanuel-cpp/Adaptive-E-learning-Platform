@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 from users.views import login_view, register_view, logout_view, index_view
-from content.views import dashboard_view, learning_view
+from content.views import dashboard_view, learning_view, complete_lesson
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -14,4 +14,5 @@ urlpatterns = [
     path('dashboard/', dashboard_view, name='dashboard'),
     path('learn/', learning_view, name='learning_default'),
     path('learn/<int:lesson_id>/', learning_view, name='learning'),
+    path('complete/<int:lesson_id>/', complete_lesson, name='complete_lesson'),
 ]

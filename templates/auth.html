@@ -12,7 +12,7 @@
             --accent: #00897b;
             --dark: #1a237e;
             --light: #f5f5f5;
-            --gray: #37474f;
+            --gray: #37474f; 
             --light-gray: #e0e0e0;
             --transition: all 0.3s ease;
         }
@@ -444,12 +444,33 @@
                 <h2 class="auth-title">Welcome to CBU Learn</h2>
             </div>
             
-            <!-- Display error messages -->
-            {% if messages %}
-            
-            <div class="messages">
+                    {% if messages %}
+            <div class="messages" style="margin:10px 0;">
                 {% for message in messages %}
-                <div class="alert alert-{{ message.tags }}">
+                <div 
+                    style="
+                        padding:10px 15px;
+                        margin-bottom:8px;
+                        border-radius:6px;
+                        font-size:14px;
+                        {% if message.tags == 'error' %}
+                            background:#fde2e1; 
+                            color:#a94442; 
+                            border:1px solid #f5c2c2;
+                        {% elif message.tags == 'success' %}
+                            background:#e2f7e1; 
+                            color:#2e7d32; 
+                            border:1px solid #a5d6a7;
+                        {% elif message.tags == 'warning' %}
+                            background:#fff8e1; 
+                            color:#856404; 
+                            border:1px solid #ffe58f;
+                        {% else %}
+                            background:#e7f3fe; 
+                            color:#31708f; 
+                            border:1px solid #b3d7ff;
+                        {% endif %}
+                    ">
                     {{ message }}
                 </div>
                 {% endfor %}

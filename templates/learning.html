@@ -1012,7 +1012,7 @@
                     <button class="menu-toggle" id="mobile-toggle">
                         <i class="fas fa-bars"></i>
                     </button>
-                    <a href="index.html" class="logo">
+                    <a href="#" class="logo">
                         <div class="logo-icon">
                             <i class="fas fa-graduation-cap"></i>
                         </div>
@@ -1021,7 +1021,7 @@
                 </div>
                 
                 <div class="nav-buttons">
-                    <a href="dashboard.html" class="nav-btn login-btn">
+                    <a href="{%url 'dashboard'%}" class="nav-btn login-btn">
                         <i class="fas fa-user"></i> Me
                     </a>
                     <a href="{%url 'logout' %}" class="nav-btn register-btn">
@@ -1074,6 +1074,16 @@
         <div class="lesson-content">
             <!-- Dynamic content from database -->
             {{ lesson.content|safe }}
+        </div>
+        
+        <!--Saving Content Button-->
+        <div class="completion-section" style="margin: 40px 0; text-align: center;">
+            <form method="post" action="{% url 'complete_lesson' lesson_id=next_lesson.id %}">
+                {% csrf_token %}
+                <button type="submit" class="nav-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
+                    <i class="fas fa-check-circle"></i> Mark Lesson as Completed
+                </button>
+            </form>
         </div>
         
         <div class="content-footer">
