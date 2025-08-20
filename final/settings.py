@@ -30,6 +30,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'final.security_middleware.LoginAttemptMiddleware',
+    'final.security_middleware.NoCacheMiddleware',
 ]
 
 ROOT_URLCONF = 'final.urls'
@@ -90,3 +92,17 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 AUTH_USER_MODEL = 'users.Student'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'home'
+
+# Security settings
+MAX_LOGIN_ATTEMPTS = 3      # lock after 3 failed attempts
+LOCKOUT_TIME = 300   
+
+# Session security
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SECURE = False  # Set to True in production with HTTPS
+SESSION_EXPIRE_AT_BROWSER_CLOSE = True
+CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
+
+# Cache control headers
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True

@@ -1106,9 +1106,11 @@
     <main class="main-content">
     <div class="container">
         <div class="welcome-banner">
-            <h1 class="welcome-title">Welcome {{ student.first_name }}!</h1>
+            <h1 class="welcome-title">Welcome {{ student.first_name }} {{student.last_name}}</h1>
             <p class="welcome-subtitle">Continue your journey to master C++ programming fundamentals.</p>
+            
         </div>
+        
     
       
         <div class="overall-progress-card dashboard-card">
@@ -1200,5 +1202,12 @@
             </div>
         </div>
     </footer>
+    <script>
+        // Prevent back button after logout
+        history.pushState(null, null, location.href);
+        window.onpopstate = function() {
+            history.go(1);
+        };
+</script>
 </body>
 </html>

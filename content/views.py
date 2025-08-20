@@ -8,7 +8,9 @@ from progress.models import UserProgress,ModuleProgress
 from engine.adaptive_logic import get_next_lesson, get_previous_lesson
 from django.utils import timezone
 import datetime
+from users.decorators import prevent_after_logout
 
+@prevent_after_logout
 @login_required
 def dashboard_view(request):
     student = request.user
@@ -63,6 +65,7 @@ def dashboard_view(request):
         'recent_activity': recent_activity
     })
 
+@prevent_after_logout
 @login_required
 def learning_view(request, lesson_id=None):
     student = request.user
@@ -150,7 +153,7 @@ def complete_lesson(request, lesson_id):
         if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
             return JsonResponse({'success': True, 'progress_id': progress.id})
         
-        messages.success(request, f"Lesson '{lesson.title}' marked as completed!")
+        #messages.success(request, f"Lesson '{lesson.title}' marked as completed!")
         return redirect('learning', lesson_id=lesson_id)
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
