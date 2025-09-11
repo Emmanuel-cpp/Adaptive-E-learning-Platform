@@ -472,9 +472,12 @@
             
             <form method="post" action="{% url 'login' %}" class="auth-body">
                 {% csrf_token %}
+                <!-- Change the username field to student_id -->
                 <div class="form-group">
-                    <label for="username" class="form-label">Username</label>
-                    <input type="text" id="username" name="username" class="form-control" placeholder="Enter your username" required autofocus>
+                    <label for="student_id" class="form-label">Student ID</label>
+                    <input type="text" id="student_id" name="student_id" class="form-control" 
+                        placeholder="Enter your 8-digit Student ID" required autofocus 
+                        pattern="\d{8}" title="Please enter your 8-digit Student ID">
                 </div>
                 <div class="form-group">
                     <label for="password" class="form-label">Password</label>
@@ -490,6 +493,7 @@
             
             <div class="auth-footer">
                 <p>Don't have an account? <a href="{% url 'register' %}" class="switch-auth">Register Now</a></p>
+                 <p>Are you an administrator? <a href="{% url 'admin_login' %}" class="switch-auth">Login here</a></p>
             </div>
         </div>
     </div>

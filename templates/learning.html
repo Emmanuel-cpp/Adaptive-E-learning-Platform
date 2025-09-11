@@ -1045,21 +1045,31 @@
         <div class="progress-text">{{ progress_percentage }}% Complete</div>
     </div>
 
-    <ul class="module-list">
+        <ul class="module-list">
         {% for mod in course.modules.all %}
         <li class="module-item {% if mod == module %}active{% endif %}">
-            <a href="{% url 'learning' lesson_id=mod.lessons.first.id %}" class="module-link">
-                <div class="module-icon">
-                    <i class="fas fa-play"></i>
-                </div>
-                <span class="module-title">{{ mod.title }}</span>
-                <div class="module-status">
-                    {% if mod in completed_modules %}✓{% endif %}
-                </div>
-            </a>
+            {% if mod.lessons.first %}
+                <a href="{% url 'learning' lesson_id=mod.lessons.first.id %}" class="module-link">
+                    <div class="module-icon">
+                        <i class="fas fa-play"></i>
+                    </div>
+                    <span class="module-title">{{ mod.title }}</span>
+                    <div class="module-status">
+                        {% if mod in completed_modules %}✓{% endif %}
+                    </div>
+                </a>
+            {% else %}
+                <span class="module-link disabled" style="opacity:0.6; cursor:not-allowed;">
+                    <div class="module-icon">
+                        <i class="fas fa-ban"></i>
+                    </div>
+                    <span class="module-title">{{ mod.title }} (No lessons)</span>
+                </span>
+            {% endif %}
         </li>
         {% endfor %}
     </ul>
+
 </aside>
 
     <!-- Main Content -->
@@ -1097,17 +1107,17 @@
         </div>
         
         <div class="content-footer">
-            {% if previous_lesson %}
+           <!--- {% if previous_lesson %} -->
             <a href="{% url 'learning' lesson_id=previous_lesson.id %}" class="nav-btn outline">
                 <i class="fas fa-arrow-left"></i> Previous: {{ previous_lesson.title }}
             </a>
-            {% endif %}
+            <!---{% endif %} -->
             
-            {% if next_lesson %}
+            <!---{% if next_lesson %}-->
             <a href="{% url 'learning' lesson_id=next_lesson.id %}" class="nav-btn">
                 Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
             </a>
-            {% endif %}
+            <!---{% endif %}-->
         </div>
     </main>
 </div>

@@ -19,6 +19,7 @@ INSTALLED_APPS = [
     'content',
     'progress',
     'engine',
+    'adminPanel',
     'django_extensions',
 ]
 

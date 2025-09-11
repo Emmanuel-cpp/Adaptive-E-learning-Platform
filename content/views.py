@@ -5,10 +5,12 @@ from django.contrib import messages
 from django.http import JsonResponse
 from .models import Course, Module, Lesson
 from progress.models import UserProgress,ModuleProgress
-from engine.adaptive_logic import get_next_lesson, get_previous_lesson
+from engine.adaptive_learning import get_next_lesson, get_previous_lesson
 from django.utils import timezone
 import datetime
 from users.decorators import prevent_after_logout
+from engine.adaptive_learning import ai_engine
+
 
 @prevent_after_logout
 @login_required
@@ -89,7 +91,7 @@ def learning_view(request, lesson_id=None):
         if lesson:
             return redirect('learning', lesson_id=lesson.id)
         else:
-            messages.info(request, "No lessons available yet")
+            
             return redirect('dashboard')
     
     # Update progress
@@ -115,11 +117,25 @@ def learning_view(request, lesson_id=None):
     
     # Get next and previous lessons
     next_lesson = get_next_lesson(student, lesson)
-    previous_lesson = get_previous_lesson(lesson)
+    previous_lesson = get_previous_lesson(student, lesson)
     
     # Ensure next_lesson is not the current lesson
     if next_lesson and next_lesson.id == lesson.id:
         next_lesson = None
+    
+    # Get AI recommendations for this lesson
+    #ai_recommendations = ai_engine.get_lesson_recommendations(student, lesson)
+    
+    # Get completed modules and lessons
+    completed_modules = Module.objects.filter(
+        lessons__userprogress__student=student,
+        lessons__userprogress__is_completed=True
+    ).distinct()
+    
+    completed_lessons = Lesson.objects.filter(
+        userprogress__student=student,
+        userprogress__is_completed=True
+    )
     
     return render(request, 'learning.html', {
         'course': module.course,
@@ -127,10 +143,12 @@ def learning_view(request, lesson_id=None):
         'lesson': lesson,
         'progress_percentage': progress_percentage,
         'next_lesson': next_lesson,
-        'previous_lesson': previous_lesson
+        'previous_lesson': previous_lesson,
+        #'ai_recommendations': ai_recommendations,
+        'completed_modules': completed_modules,
+        'completed_lessons': completed_lessons
     })
     
-
 @login_required
 def complete_lesson(request, lesson_id):
     """Mark a lesson as completed"""

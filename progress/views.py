@@ -3,8 +3,8 @@ from django.shortcuts import render, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.utils import timezone
-from .models import StudentProgress, LearningGoal
-from content.models import Module, Lesson, Exercise
+from .models import UserProgress, ModuleProgress, CourseProgress
+from content.models import Module, Lesson
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -12,7 +12,7 @@ User = get_user_model()
 @login_required
 def progress_dashboard(request):
     student = request.user
-    progress_data = StudentProgress.objects.filter(student=student)
+    progress_data = UserProgress.objects.filter(student=student)
     
     # Calculate overall progress
     total_modules = Module.objects.count()
@@ -23,14 +23,14 @@ def progress_dashboard(request):
     recent_activity = progress_data.order_by('-last_accessed')[:10]
     
     # Get learning goals
-    goals = LearningGoal.objects.filter(student=student)
+    #goals = LearningGoal.objects.filter(student=student)
     
     context = {
         'overall_progress': overall_progress,
         'completed_modules': completed_modules,
         'total_modules': total_modules,
         'recent_activity': recent_activity,
-        'goals': goals,
+        #'goals': goals,
     }
     return render(request, 'progress/dashboard.html', context)
 
@@ -40,17 +40,17 @@ def update_progress(request, module_id, lesson_id=None, exercise_id=None):
         student = request.user
         module = get_object_or_404(Module, id=module_id)
         lesson = get_object_or_404(Lesson, id=lesson_id) if lesson_id else None
-        exercise = get_object_or_404(Exercise, id=exercise_id) if exercise_id else None
+        #exercise = get_object_or_404(Exercise, id=exercise_id) if exercise_id else None
         
         status = request.POST.get('status', 'in_progress')
         score = float(request.POST.get('score', 0))
         time_spent = request.POST.get('time_spent')
         
-        progress, created = StudentProgress.objects.get_or_create(
+        progress, created = UserProgress.objects.get_or_create(
             student=student,
             module=module,
             lesson=lesson,
-            exercise=exercise,
+            
             defaults={'status': status, 'score': score}
         )
         
@@ -73,7 +73,7 @@ def module_progress_detail(request, module_id):
     student = request.user
     module = get_object_or_404(Module, id=module_id)
     
-    progress_data = StudentProgress.objects.filter(
+    progress_data = UserProgress.objects.filter(
         student=student, 
         module=module
     ).select_related('lesson', 'exercise')
@@ -94,14 +94,14 @@ def set_learning_goal(request):
         
         module = get_object_or_404(Module, id=module_id) if module_id else None
         
-        goal = LearningGoal.objects.create(
+        """goal = LearningGoal.objects.create(
             student=request.user,
             title=title,
             description=description,
             target_module=module,
             target_date=target_date if target_date else None
         )
-        
-        return JsonResponse({'success': True, 'goal_id': goal.id})
+        """
+        #return JsonResponse({'success': True, 'goal_id': goal.id})
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
