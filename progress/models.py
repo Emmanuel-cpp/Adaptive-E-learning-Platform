@@ -6,21 +6,39 @@ from content.models import Course, Module, Lesson
 
 User = get_user_model()
 
+from django.db import models
+from django.contrib.auth import get_user_model
+from django.utils import timezone
+from content.models import Lesson, GeneratedTopic  # Import GeneratedTopic
+
+User = get_user_model()
+
 class UserProgress(models.Model):
-    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lesson_progress')
-    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE)
+    student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='progress')
+    lesson = models.ForeignKey(Lesson, on_delete=models.CASCADE, null=True, blank=True, related_name='progress')
+    generated_topic = models.ForeignKey(GeneratedTopic, on_delete=models.CASCADE, null=True, blank=True, related_name='progress') # ADD THIS LINE
     is_completed = models.BooleanField(default=False)
-    score = models.FloatField(default=0.0)
-    time_spent = models.DurationField(null=True, blank=True)
-    attempts = models.IntegerField(default=0)
+    score = models.IntegerField(null=True, blank=True)
     last_accessed = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)
+    time_spent = models.DurationField(null=True, blank=True)
+    attempts = models.IntegerField(default=0)
     
     class Meta:
-        unique_together = ['student', 'lesson']
-    
+        verbose_name_plural = "User Progress"
+        unique_together = ('student', 'lesson', 'generated_topic') # ENSURE THIS IS A TUPLE
+
     def __str__(self):
-        return f"{self.student.username} - {self.lesson.title}"
+        if self.lesson:
+            return f"{self.student.username} - {self.lesson.title}"
+        elif self.generated_topic:
+            return f"{self.student.username} - {self.generated_topic.title}"
+        return f"{self.student.username} - Progress"
+
+    def save(self, *args, **kwargs):
+        if self.is_completed and not self.completed_at:
+            self.completed_at = timezone.now()
+        super().save(*args, **kwargs)
 
 class ModuleProgress(models.Model):
     student = models.ForeignKey(User, on_delete=models.CASCADE, related_name='module_progress')

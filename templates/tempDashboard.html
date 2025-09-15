@@ -1,528 +1,13 @@
-<!--<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBU Learn - Dashboard</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        :root {
-            --primary: #0d47a1;
-            --accent: #00897b;
-            --dark: #1a237e;
-            --light: #f5f5f5;
-            --gray: #37474f;
-            --light-gray: #e0e0e0;
-            --success: #4caf50;
-            --warning: #ff9800;
-            --transition: all 0.3s ease;
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Poppins', sans-serif;
-            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
-            color: #333;
-            line-height: 1.6;
-            overflow-x: hidden;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-        }
-        
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 0 20px;
-        }
-        
-        /* Header */
-        header {
-            background: rgba(13, 71, 161, 0.95);
-            position: fixed;
-            width: 100%;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        nav {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 15px 0;
-        }
-        
-        .logo {
-            font-family: 'Montserrat', sans-serif;
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: white;
-            text-decoration: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        
-        .logo-icon {
-            background: white;
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-            font-size: 1.1rem;
-        }
-        
-        .nav-links {
-            display: flex;
-            gap: 30px;
-            align-items: center;
-        }
-        
-        .nav-link {
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: var(--transition);
-            padding: 8px 0;
-            position: relative;
-        }
-        
-        .nav-link.active::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: white;
-            border-radius: 3px;
-        }
-        
-        .nav-link:hover {
-            opacity: 0.9;
-        }
-        
-        .user-menu {
-            display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        /* Main Content */
-        .main-content {
-            padding: 100px 0 40px;
-            flex: 1;
-        }
-        
-        .welcome-banner {
-            background: linear-gradient(135deg, var(--primary), var(--dark));
-            color: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .welcome-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-        }
-        
-        .welcome-subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            max-width: 700px;
-        }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-        
-        .dashboard-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-            transition: var(--transition);
-        }
-        
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .card-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.3rem;
-            color: var(--dark);
-        }
-        
-        .card-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            background: rgba(13, 71, 161, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-            font-size: 1.5rem;
-        }
-        
-        .progress-container {
-            margin-bottom: 20px;
-        }
-        
-        .progress-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        
-        .progress-label {
-            font-size: 0.95rem;
-            color: var(--gray);
-        }
-        
-        .progress-percent {
-            font-weight: 600;
-            color: var(--dark);
-        }
-        
-        .progress-bar {
-            height: 10px;
-            background: var(--light-gray);
-            border-radius: 5px;
-            overflow: hidden;
-        }
-        
-        .progress-fill {
-            height: 100%;
-            background: var(--accent);
-            border-radius: 5px;
-        }
-        
-        .module-list {
-            list-style: none;
-        }
-        
-        .module-item {
-            padding: 15px 0;
-            border-bottom: 1px solid var(--light-gray);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .module-item:last-child {
-            border-bottom: none;
-        }
-        
-        .module-title {
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-        
-        .module-status {
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .status-completed {
-            color: var(--success);
-        }
-        
-        .status-in-progress {
-            color: var(--warning);
-        }
-        
-        .module-action {
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 15px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        
-        .module-action:hover {
-            background: var(--dark);
-            transform: translateY(-2px);
-        }
-        
-        .recommendations {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 15px;
-        }
-        
-        .recommendation-card {
-            background: var(--light);
-            border-radius: 10px;
-            padding: 20px;
-            transition: var(--transition);
-            border: 1px solid rgba(13, 71, 161, 0.1);
-        }
-        
-        .recommendation-card:hover {
-            border-color: var(--primary);
-            transform: translateY(-3px);
-        }
-        
-        .rec-title {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--dark);
-        }
-        
-        .rec-description {
-            font-size: 0.9rem;
-            color: var(--gray);
-            margin-bottom: 15px;
-        }
-        
-        .rec-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 0.85rem;
-            color: var(--gray);
-        }
-        
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
-        }
-        
-        .action-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            transition: var(--transition);
-            cursor: pointer;
-        }
-        
-        .action-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            background: linear-gradient(135deg, rgba(13, 71, 161, 0.03), rgba(0, 137, 123, 0.03));
-        }
-        
-        .action-icon {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 15px;
-            background: rgba(13, 71, 161, 0.1);
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-            font-size: 1.8rem;
-        }
-        
-        .action-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
-            color: var(--dark);
-        }
-        
-        .action-description {
-            color: var(--gray);
-            font-size: 0.95rem;
-        }
-        
-        /* Footer */
-        footer {
-            background: var(--dark);
-            color: white;
-            padding: 30px 0 15px;
-        }
-        
-        .copyright {
-            text-align: center;
-            padding-top: 15px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-            color: #adb5bd;
-            font-size: 0.85rem;
-        }
-        
-        /* Responsive Design */
-        @media (max-width: 992px) {
-            .welcome-title {
-                font-size: 1.6rem;
-            }
-            
-            .nav-links {
-                gap: 20px;
-            }
-        }
-        
-        @media (max-width: 768px) {
-            .main-content {
-                padding: 90px 0 30px;
-            }
-            
-            .nav-links {
-                display: none;
-            }
-            
-            .welcome-banner {
-                padding: 20px;
-            }
-            
-            .dashboard-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .quick-actions {
-                grid-template-columns: 1fr;
-            }
-        }
-        
-        @media (max-width: 480px) {
-            .welcome-title {
-                font-size: 1.4rem;
-            }
-            
-            .welcome-subtitle {
-                font-size: 1rem;
-            }
-            
-            .dashboard-card {
-                padding: 20px;
-            }
-            
-            .card-title {
-                font-size: 1.2rem;
-            }
-        }
-    </style>
-</head>
-<body>
-  
-    <header>
-        <div class="container">
-            <nav>
-                <a href="index.html" class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <span class="logo-text">CBU Learn</span>
-                </a>
-                
-                <div class="nav-links">
-                    <a href="dashboard.html" class="nav-link active">Dashboard</a>
-                    <a href="learning.html" class="nav-link">Learning</a>
-                    <a href="assessments.html" class="nav-link">Assessments</a>
-                    <a href="resources.html" class="nav-link">Resources</a>
-                    <a href="progress.html" class="nav-link">Progress</a>
-                </div>
-                
-                <div class="user-menu">
-                    <div class="user-avatar">JS</div>
-                </div>
-            </nav>
-        </div>
-    </header>
-
-    <main class="main-content">
-    <div class="container">
-        <div class="welcome-banner">
-            <h1 class="welcome-title">Welcome back, {{ student.first_name }}!</h1>
-            <p class="welcome-subtitle">Continue your journey to master C++ programming fundamentals.</p>
-        </div>
-        
-        <div class="dashboard-grid">
-            {% for course in progress_data %}
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h2 class="card-title">{{ course.course.title }}</h2>
-                    <div class="card-icon">
-                        <i class="fas fa-book"></i>
-                    </div>
-                </div>
-                
-                <div class="progress-container">
-                    <div class="progress-header">
-                        <span class="progress-label">Course Progress</span>
-                        <span class="progress-percent">{{ course.progress }}%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: {{ course.progress }}%"></div>
-                    </div>
-                </div>
-                
-                <a href="{% url 'learning_default' %}" class="module-action">Continue Learning</a>
-            </div>
-            {% endfor %}
-        </div>
-    </div>
-</main>
-
-   
-    <footer>
-        <div class="container">
-            <div class="copyright">
-                <p>&copy; 2024 Copperbelt University - School of ICT. All rights reserved.</p>
-                <p>Adaptive E-Learning Platform for First Year ICT Students</p>
-            </div>
-        </div>
-    </footer>
-</body>
-</html>-->
-
+{% load markdown_deux_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CBU Learn - Dashboard</title>
+    <title>CBU Learn | C++ Programming Fundamentals</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
             --primary: #0d47a1;
@@ -531,8 +16,8 @@
             --light: #f5f5f5;
             --gray: #37474f;
             --light-gray: #e0e0e0;
+            --dark-gray: #263238;
             --success: #4caf50;
-            --warning: #ff9800;
             --transition: all 0.3s ease;
         }
         
@@ -576,6 +61,22 @@
             padding: 15px 0;
         }
         
+        .logo-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .menu-toggle {
+            display: none;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 5px;
+        }
+        
         .logo {
             font-family: 'Montserrat', sans-serif;
             font-weight: 700;
@@ -599,398 +100,360 @@
             font-size: 1.1rem;
         }
         
-        .nav-links {
+        .nav-buttons {
             display: flex;
-            gap: 30px;
-            align-items: center;
+            gap: 2px;
         }
         
-        .nav-link {
-            color: white;
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            padding: 4px 10px;
+            border-radius: 30px;
             text-decoration: none;
-            font-weight: 500;
+            font-weight: 600;
             transition: var(--transition);
-            padding: 8px 0;
+            font-size: 0.7rem;
+            text-align: center;
+        }
+        
+        .login-btn {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .login-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+        
+        .register-btn {
+            background: white;
+            color: var(--primary);
+            border: 2px solid white;
+            box-shadow: 0 4px 15px rgba(255, 255, 255, 0.2);
+        }
+        
+        .register-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Learning Layout */
+        .learning-container {
+            display: flex;
+            flex: 1;
+            padding-top: 80px;
+            min-height: calc(100vh - 80px);
             position: relative;
         }
         
-        .nav-link.active::after {
-            content: "";
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            background: white;
-            border-radius: 3px;
-        }
-        
-        .nav-link:hover {
-            opacity: 0.9;
-        }
-        
-        .user-menu {
+        /* Main content wrapper */
+        .main-content-wrapper {
             display: flex;
-            align-items: center;
-            gap: 15px;
-        }
-        
-        .user-avatar {
-            width: 40px;
-            height: 40px;
-            border-radius: 50%;
-            background: var(--accent);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-        }
-        
-        /* Main Content */
-        .main-content {
-            padding: 100px 0 40px;
             flex: 1;
+            min-height: 0;
+            width: 100%;
         }
         
-        .welcome-banner {
-            background: linear-gradient(135deg, var(--primary), var(--dark));
-            color: white;
-            border-radius: 12px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-        }
-        
-        .welcome-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-        }
-        
-        .welcome-subtitle {
-            font-size: 1.1rem;
-            opacity: 0.9;
-            max-width: 700px;
-        }
-        
-        .dashboard-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 25px;
-            margin-bottom: 30px;
-        }
-        
-        .dashboard-card {
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
             background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
-            transition: var(--transition);
+            border-right: 1px solid var(--light-gray);
+            padding: 25px 0;
+            overflow-y: auto;
+            height: calc(100vh - 80px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            z-index: 900;
+            transition: transform 0.4s ease;
+            position: sticky;
+            top: 80px;
         }
         
-        .dashboard-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+        .sidebar-header {
+            padding: 0 25px 15px;
+            border-bottom: 1px solid var(--light-gray);
+            margin-bottom: 15px;
         }
         
-        .card-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        
-        .card-title {
+        .course-title {
             font-family: 'Montserrat', sans-serif;
             font-size: 1.3rem;
             color: var(--dark);
-        }
-        
-        .card-icon {
-            width: 50px;
-            height: 50px;
-            border-radius: 12px;
-            background: rgba(13, 71, 161, 0.1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: var(--primary);
-            font-size: 1.5rem;
-        }
-        
-        .progress-container {
-            margin-bottom: 20px;
-        }
-        
-        .progress-header {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-        
-        .progress-label {
-            font-size: 0.95rem;
-            color: var(--gray);
-        }
-        
-        .progress-percent {
-            font-weight: 600;
-            color: var(--dark);
+            margin-bottom: 5px;
         }
         
         .progress-bar {
-            height: 10px;
+            height: 8px;
             background: var(--light-gray);
-            border-radius: 5px;
+            border-radius: 4px;
             overflow: hidden;
+            margin: 10px 0;
         }
         
         .progress-fill {
             height: 100%;
             background: var(--accent);
-            border-radius: 5px;
+            border-radius: 4px;
+            width: 45%;
         }
         
-        .module-list {
-            list-style: none;
-        }
-        
-        .module-item {
-            padding: 15px 0;
-            border-bottom: 1px solid var(--light-gray);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        
-        .module-item:last-child {
-            border-bottom: none;
-        }
-        
-        .module-title {
-            font-weight: 500;
-            margin-bottom: 5px;
-        }
-        
-        .module-status {
-            font-size: 0.9rem;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .status-completed {
-            color: var(--success);
-        }
-        
-        .status-in-progress {
-            color: var(--warning);
-        }
-        
-        .module-action {
-            background: var(--primary);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 15px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: var(--transition);
-        }
-        
-        .module-action:hover {
-            background: var(--dark);
-            transform: translateY(-2px);
-        }
-        
-        .recommendations {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
-            gap: 20px;
-            margin-top: 15px;
-        }
-        
-        .recommendation-card {
-            background: var(--light);
-            border-radius: 10px;
-            padding: 20px;
-            transition: var(--transition);
-            border: 1px solid rgba(13, 71, 161, 0.1);
-        }
-        
-        .recommendation-card:hover {
-            border-color: var(--primary);
-            transform: translateY(-3px);
-        }
-        
-        .rec-title {
-            font-weight: 600;
-            margin-bottom: 10px;
-            color: var(--dark);
-        }
-        
-        .rec-description {
-            font-size: 0.9rem;
-            color: var(--gray);
-            margin-bottom: 15px;
-        }
-        
-        .rec-meta {
-            display: flex;
-            justify-content: space-between;
+        .progress-text {
             font-size: 0.85rem;
             color: var(--gray);
         }
         
-        .quick-actions {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-top: 30px;
+        .module-list {
+            list-style: none;
+            padding: 0 15px;
         }
         
-        .action-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            text-align: center;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
-            transition: var(--transition);
+        .module-item {
+            padding: 12px 15px;
+            border-radius: 8px;
+            margin-bottom: 8px;
             cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 10px;
         }
         
-        .action-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-            background: linear-gradient(135deg, rgba(13, 71, 161, 0.03), rgba(0, 137, 123, 0.03));
+        .module-item:hover {
+            background: rgba(13, 71, 161, 0.05);
         }
         
-        .action-icon {
-            width: 60px;
-            height: 60px;
-            margin: 0 auto 15px;
+        .module-item.active {
             background: rgba(13, 71, 161, 0.1);
-            border-radius: 50%;
+            border-left: 3px solid var(--primary);
+        }
+        
+        .module-icon {
+            width: 24px;
+            height: 24px;
+            background: rgba(13, 71, 161, 0.1);
+            border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--primary);
-            font-size: 1.8rem;
+            font-size: 0.9rem;
         }
         
-        .action-title {
-            font-family: 'Montserrat', sans-serif;
-            font-size: 1.2rem;
-            margin-bottom: 10px;
+        .module-title {
+            font-weight: 500;
+            font-size: 0.95rem;
             color: var(--dark);
         }
         
-        .action-description {
-            color: var(--gray);
-            font-size: 0.95rem;
+        .module-status {
+            margin-left: auto;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: var(--light-gray);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.7rem;
+            color: white;
         }
-
-
-        /* Add these to your existing CSS */
-.overall-progress-card {
-    grid-column: 1 / -1;
-    margin-bottom: 25px;
-}
-
-.progress-stats {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-    gap: 20px;
-    margin-top: 20px;
-}
-
-.stat-item {
-    text-align: center;
-    padding: 15px;
-    background: rgba(13, 71, 161, 0.05);
-    border-radius: 8px;
-}
-
-.stat-number {
-    display: block;
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: var(--primary);
-    margin-bottom: 5px;
-}
-
-.stat-label {
-    font-size: 0.9rem;
-    color: var(--gray);
-}
-
-.activity-list {
-    margin-top: 15px;
-}
-
-.activity-item {
-    display: flex;
-    align-items: center;
-    padding: 15px;
-    border-bottom: 1px solid var(--light-gray);
-    gap: 15px;
-}
-
-.activity-item:last-child {
-    border-bottom: none;
-}
-
-.activity-icon {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    background: rgba(13, 71, 161, 0.1);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--primary);
-}
-
-.activity-content {
-    flex: 1;
-}
-
-.activity-title {
-    font-weight: 500;
-    margin-bottom: 3px;
-}
-
-.activity-meta {
-    font-size: 0.85rem;
-    color: var(--gray);
-}
-
-.activity-status {
-    font-size: 0.9rem;
-    font-weight: 500;
-}
-
-.status-completed {
-    color: var(--success);
-}
-
-.status-in-progress {
-    color: var(--warning);
-}
-
-.no-activity {
-    text-align: center;
-    color: var(--gray);
-    padding: 30px;
-    font-style: italic;
-}
+        
+        .module-status.completed {
+            background: var(--success);
+        }
+        
+        .module-status.current {
+            background: var(--primary);
+        }
+        
+        /* Main Content */
+        .content-area {
+            flex: 1;
+            padding: 30px 40px;
+            background: white;
+            min-height: calc(100vh - 80px);
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.05);
+            transition: margin-left 0.4s ease;
+            overflow-y: auto;
+        }
+        
+        .content-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid var(--light-gray);
+        }
+        
+        .page-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            color: var(--dark);
+        }
+        
+        .breadcrumb {
+            display: flex;
+            gap: 10px;
+            font-size: 0.95rem;
+            color: var(--gray);
+        }
+        
+        .breadcrumb a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .breadcrumb .divider {
+            color: var(--light-gray);
+        }
+        
+        .lesson-content {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .lesson-section {
+            margin-bottom: 40px;
+        }
+        
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.4rem;
+            color: var(--dark);
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid var(--light-gray);
+        }
+        
+        .section-content {
+            line-height: 1.8;
+        }
+        
+        .section-content p {
+            margin-bottom: 20px;
+        }
+        
+        .section-content ul {
+            padding-left: 30px;
+            margin-bottom: 25px;
+        }
+        
+        .section-content li {
+            margin-bottom: 10px;
+        }
+        
+        .note-box {
+            background: rgba(13, 71, 161, 0.05);
+            border-left: 4px solid var(--primary);
+            padding: 20px;
+            border-radius: 0 8px 8px 0;
+            margin: 25px 0;
+        }
+        
+        .note-title {
+            font-weight: 600;
+            color: var(--primary);
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .code-block {
+            background: var(--dark-gray);
+            color: #f8f8f2;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 25px 0;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+        
+        .code-comment {
+            color: #6272a4;
+        }
+        
+        .code-keyword {
+            color: #ff79c6;
+        }
+        
+        .code-function {
+            color: #50fa7b;
+        }
+        
+        .code-variable {
+            color: #f1fa8c;
+        }
+        
+        .code-string {
+            color: #f1fa8c;
+        }
+        
+        .code-number {
+            color: #bd93f9;
+        }
+        
+        .content-footer {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 50px;
+            padding-top: 25px;
+            border-top: 1px solid var(--light-gray);
+        }
+        
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            padding: 12px 25px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            background: var(--primary);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .nav-btn.outline {
+            background: transparent;
+            color: var(--primary);
+            border: 2px solid var(--primary);
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Overlay for mobile sidebar */
+        .sidebar-overlay {
+            display: none;
+            position: fixed;
+            top: 80px;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 850;
+        }
+        
         /* Footer */
         footer {
             background: var(--dark);
             color: white;
             padding: 30px 0 15px;
+            width: 100%;
+            position: relative;
+            z-index: 950;
         }
         
         .copyright {
@@ -1003,195 +466,723 @@
         
         /* Responsive Design */
         @media (max-width: 992px) {
-            .welcome-title {
-                font-size: 1.6rem;
+            .sidebar {
+                width: 240px;
+            }
+            .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            padding: 10px 16px;
+            border-radius: 30px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            text-align: center;
+            }
+
+            .logo-text {
+                font-size: 0.9rem;
             }
             
-            .nav-links {
-                gap: 20px;
+            .logo-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
             }
         }
         
         @media (max-width: 768px) {
-            .main-content {
-                padding: 90px 0 30px;
+            .menu-toggle {
+                display: block;
             }
             
-            .nav-links {
-                display: none;
+            .sidebar {
+                position: fixed;
+                top: 80px;
+                left: 0;
+                height: calc(100vh - 80px);
+                transform: translateX(-100%);
+                border-radius: 0 12px 12px 0;
+                border: 1px solid rgba(13, 71, 161, 0.1);
             }
             
-            .welcome-banner {
-                padding: 20px;
+            .sidebar.active {
+                transform: translateX(0);
             }
             
-            .dashboard-grid {
-                grid-template-columns: 1fr;
+            .sidebar-overlay.active {
+                display: block;
             }
             
-            .quick-actions {
-                grid-template-columns: 1fr;
+            .content-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
             }
+            
+            .copyright {
+                padding: 10px 15px;
+                font-size: 0.8rem;
+            }
+            
+            .copyright p {
+                margin-bottom: 5px;
+            }
+
         }
         
         @media (max-width: 480px) {
-            .welcome-title {
-                font-size: 1.4rem;
+            .content-footer {
+                flex-direction: column;
+                gap: 15px;
             }
             
-            .welcome-subtitle {
-                font-size: 1rem;
+            .nav-btn {
+                width: 100%;
+                justify-content: center;
+                padding: 10px 15px;
+                font-size: 0.95rem;
             }
             
-            .dashboard-card {
+            .content-area {
                 padding: 20px;
             }
             
-            .card-title {
+            .page-title {
+                font-size: 1.5rem;
+            }
+            
+            .section-title {
                 font-size: 1.2rem;
             }
-        }
-         .logout-button {
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: none;
-            border-radius: 6px;
-            padding: 8px 15px;
-            font-size: 0.9rem;
-            cursor: pointer;
-            transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-        
-        .logout-button:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-        
-        /* Responsive adjustments for logout button */
-        @media (max-width: 768px) {
-            .logout-button {
-                padding: 10px;
+            
+            .sidebar {
+                width: 85%;
+                height: calc(100vh - 80px);
             }
+            
+            /* Header adjustments */
+            .logo-text {
+                font-size: 0.9rem;
+            }
+            
+            .logo-icon {
+                width: 32px;
+                height: 32px;
+                font-size: 1rem;
+            }
+            
+            .nav-btn {
+                padding: 7px 12px;
+                font-size: 0.85rem;
+            }
+            
+            /* Footer text adjustments */
+            .copyright {
+                font-size: 0.75rem;
+            }
+
+            .data-types-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 20px 0;
+                font-size: 0.95rem;
+            }
+
+            .data-types-table th, .data-types-table td {
+                border: 1px solid var(--light-gray);
+                padding: 12px 15px;
+                text-align: left;
+            }
+
+            .data-types-table th {
+                background-color: rgba(13, 71, 161, 0.1);
+                font-weight: 600;
+            }
+
+            .modifiers-grid, .literals-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+                gap: 20px;
+                margin: 20px 0;
+            }
+
+            .modifier-card, .literal-card {
+                background: rgba(13, 71, 161, 0.05);
+                border-radius: 8px;
+                padding: 20px;
+                border: 1px solid rgba(13, 71, 161, 0.1);
+            }
+
+            .modifier-card h4, .literal-card h4 {
+                color: var(--primary);
+                margin-bottom: 10px;
+                font-size: 1.1rem;
+            }
+
+            .example-box {
+                padding: 15px;
+                border-left: 4px solid var(--success);
+                background: rgba(76, 175, 80, 0.05);
+                margin: 15px 0;
+                border-radius: 0 4px 4px 0;
+            }
+
+            .example-box.error {
+                border-left-color: var(--warning);
+                background: rgba(255, 152, 0, 0.05);
+            }
+
+            .conversion-types {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+                gap: 25px;
+                margin: 20px 0;
+            }
+
+            .conversion-card {
+                background: rgba(0, 137, 123, 0.05);
+                border-radius: 8px;
+                padding: 20px;
+                border: 1px solid rgba(0, 137, 123, 0.1);
+            }
+
+            .warning-box {
+                padding: 15px;
+                border-left: 4px solid var(--warning);
+                background: rgba(255, 152, 0, 0.05);
+                margin: 15px 0;
+                border-radius: 0 4px 4px 0;
+            }  
         }
+
+        /* Sidebar Module List */
+/* Sidebar Module List */
+    .module-list {
+        list-style: none;
+        padding: 0.5rem;
+        margin: 0;
+    }
+
+    /* Individual Module Item */
+    .module-item {
+        margin-bottom: 0.4rem;
+        border-radius: 0.5rem;
+        overflow: hidden;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    /* Module Link Styling */
+    .module-link {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        padding: 0.2rem 0.4rem;
+        text-decoration: none;
+        background-color: #f8fafc; /* very light gray */
+        color: #1f2937; /* dark gray text */
+        font-weight: 300;
+        font-size: 0.5rem; /* smaller font */
+        border-left: 1px solid transparent;
+        transition: all 0.2s ease;
+    }
+
+    /* Module Icon */
+    .module-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 1.6rem;
+        height: 1.6rem;
+        background-color: #e5e7eb; /* gray circle */
+        border-radius: 50%;
+        margin-right: 0.6rem;
+        flex-shrink: 0;
+        font-size: 0.9rem;
+        color: #2563eb; /* blue icon */
+        transition: background 0.2s ease, color 0.2s ease;
+    }
+
+    /* Module Title */
+    .module-title {
+        flex: 1;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    /* Module Status */
+    .module-status {
+        font-weight: bold;
+        color: #10b981; /* green check */
+        margin-left: 0.4rem;
+        font-size: 0.85rem;
+    }
+
+    /* Hover Effect */
+    .module-link:hover {
+        background-color: #e0f2fe; /* soft blue hover */
+        transform: translateX(2px);
+        border-left: 3px solid #2563eb;
+    }
+
+    /* Active Module */
+    .module-item.active .module-link {
+        background-color: #e0f2fe; /* soft blue hover */
+        transform: translateX(2px);
+        border-left: 3px solid #2563eb;
+    }
+
+    .module-item.active .module-icon {
+        background-color: #1e40af; /* darker blue */
+        color: #fff;
+    }
+
+    .module-item.active .module-status {
+        color: #fff;
+    }
+
+    /* Mobile Responsiveness */
+    @media (max-width: 768px) {
+        .module-link {
+            padding: 0.45rem 0.6rem;
+            font-size: 0.85rem;
+        }
+        .module-title {
+            font-size: 0.85rem;
+        }
+        .module-icon {
+            width: 1.5rem;
+            height: 1.5rem;
+            font-size: 0.85rem;
+        }
+    }
+
+    .exercise-box {
+      background: linear-gradient(to right, #f5f3ff, #ede9fe);
+      border-radius: 12px;
+      padding: 25px;
+      margin: 30px 0;
+      border-left: 4px solid #8b5cf6;
+    }
+    
+    .exercise-title {
+      font-size: 22px;
+      color: #7c3aed;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+    }
+    
+    .exercise-title i {
+      margin-right: 10px;
+    }
+    
+    .exercise-options {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin: 20px 0;
+    }
+    
+    .exercise-option {
+      background: white;
+      border: 2px dashed #cbd5e1;
+      padding: 12px 20px;
+      border-radius: 8px;
+      cursor: grab;
+      transition: all 0.3s ease;
+      font-family: 'Consolas', monospace;
+      font-size: 15px;
+      user-select: none;
+    }
+    
+    .exercise-option:hover {
+      background: #f1f5f9;
+      border-color: #8b5cf6;
+      transform: translateY(-3px);
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    }
+    
+    .exercise-option:active {
+      cursor: grabbing;
+    }
+    
+    .exercise-dropzone {
+      min-height: 60px;
+      border: 2px dashed #cbd5e1;
+      border-radius: 8px;
+      padding: 15px;
+      margin: 20px 0;
+      text-align: center;
+      font-size: 16px;
+      color: #64748b;
+      background: white;
+      transition: all 0.3s ease;
+    }
+    
+    .exercise-dropzone.active {
+      border-color: #8b5cf6;
+      background: #f5f3ff;
+      color: #7c3aed;
+    }
+    
+    .exercise-button {
+      background: linear-gradient(135deg, #7c3aed, #6d28d9);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: block;
+      margin: 0 auto;
+    }
+    
+    .exercise-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    }
+    
+    .exercise-feedback {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 500;
+      font-size: 17px;
+      display: none;
+    }
+    
+    .feedback-correct {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
+    
+    .feedback-incorrect {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      display: block;
+    }
+
+    .quiz-section {
+      background: linear-gradient(to right, #fffbeb, #fef3c7);
+      border-radius: 10px;
+      padding: 25px;
+      margin: 30px 0;
+      border-left: 4px solid #f59e0b;
+    }
+    
+    .quiz-title {
+      display: flex;
+      align-items: center;
+      margin-bottom: 20px;
+      color: #b45309;
+    }
+    
+    .quiz-title i {
+      margin-right: 10px;
+      font-size: 1.5rem;
+    }
+    
+    .quiz-question {
+      font-weight: 600;
+      margin-bottom: 20px;
+      color: #444;
+      font-size: 1.2rem;
+    }
+    
+    .quiz-options {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .quiz-option {
+      padding: 15px;
+      background: white;
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      position: relative;
+      padding-left: 45px;
+    }
+    
+    .quiz-option:hover {
+      border-color: #4f46e5;
+      transform: translateX(5px);
+    }
+    
+    .quiz-option::before {
+      content: "";
+      position: absolute;
+      left: 15px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      border: 2px solid #cbd5e1;
+      border-radius: 50%;
+      transition: all 0.2s ease;
+    }
+    
+    .quiz-option.selected::before {
+      border-color: #4f46e5;
+      background: #4f46e5;
+    }
+    
+    .quiz-option.selected::after {
+      content: "";
+      position: absolute;
+      left: 20px;
+      top: 50%;
+      transform: translateY(-50%) rotate(45deg);
+      width: 5px;
+      height: 10px;
+      border: solid white;
+      border-width: 0 2px 2px 0;
+    }
+    
+    .quiz-option.correct {
+      background: #10b981;
+      color: white;
+      border-color: #10b981;
+    }
+    
+    .quiz-option.incorrect {
+      background: #ef4444;
+      color: white;
+      border-color: #ef4444;
+    }
+    
+    .quiz-button {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      display: block;
+      margin: 25px auto 0;
+    }
+    
+    .quiz-button:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 5px 15px rgba(245, 158, 11, 0.4);
+    }
+    
+    .quiz-feedback {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      text-align: center;
+      font-weight: 500;
+      display: none;
+    }
+    
+    .quiz-correct {
+      background: #f0fdf4;
+      color: #166534;
+      border: 1px solid #bbf7d0;
+      display: block;
+    }
+    
+    .quiz-incorrect {
+      background: #fef2f2;
+      color: #b91c1c;
+      border: 1px solid #fecaca;
+      display: block;
+    }
     </style>
 </head>
 <body>
-    <!-- Header -->
+   <!-- Header -->
     <header>
         <div class="container">
             <nav>
-                <a href="#" class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <span class="logo-text">CBU Learn</span>
-                </a>
-
-                <div class="user-menu">
-                    <div class="user-avatar">{{user.first_name|slice:":1"}}{{user.last_name|slice:":1"}}</div>
-                    <a href="{% url 'logout' %}" class="logout-button">
-                        <i class="fas fa-sign-out-alt"></i>
-                        <span class="logout-text">Logout</span>
+                <div class="logo-container">
+                    <button class="menu-toggle" id="mobile-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <a href="#" class="logo">
+                        <div class="logo-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <span class="logo-text">CBU Learn</span>
+                    </a>
+                </div>
+                
+                <div class="nav-buttons">
+                    <a href="{% url 'dashboard' %}" class="nav-btn login-btn">
+                        <i class="fas fa-user"></i> Me
+                    </a>
+                    <a href="{% url 'logout' %}" class="nav-btn register-btn">
+                        <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
                 </div>
             </nav>
         </div>
     </header>
 
-    <!-- Main Content -->
-    <main class="main-content">
-    <div class="container">
-        <div class="welcome-banner">
-            <h1 class="welcome-title">Welcome {{ student.first_name }} {{student.last_name}}</h1>
-            <p class="welcome-subtitle">Continue your journey to master C++ programming fundamentals.</p>
-            
-        </div>
-        
-    
-      
-        <div class="overall-progress-card dashboard-card">
-    <div class="card-header">
-        <h2 class="card-title">Overall Progress</h2>
-        <div class="card-icon">
-            <i class="fas fa-chart-line"></i>
-        </div>
-    </div>
-    
-    <div class="progress-container">
-        <div class="progress-header">
-            <span class="progress-label">All Courses</span>
-            <span class="progress-percent">{{ overall_progress }}%</span>
-        </div>
-        <div class="progress-bar">
-            <div class="progress-fill" style="width: {{ overall_progress }}%"></div>
-        </div>
-    </div>
+    <!-- Learning Layout -->
+    <div class="learning-container">
+        <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
-        <div class="progress-stats">
-        <div class="stat-item">
-            <span class="stat-number">{{ total_completed }}</span>
-            <span class="stat-label">Lessons Completed</span>
-        </div>
-        <div class="stat-item">
-            <span class="stat-number">{{ total_lessons }}</span>
-            <span class="stat-label">Total Lessons</span>
-        </div>
-    </div>
-</div>
-     
-
-
-        
-    <div class="dashboard-grid">
-      {% for course in progress_data %}
-            <!-- Add this after the dashboard-grid -->
-    <div class="dashboard-card">
-    <div class="card-header">
-        <h2 class="card-title">Recent Activity</h2>
-        <div class="card-icon">
-            <i class="fas fa-history"></i>
-        </div>
-    </div>
-    
-    <div class="activity-list">
-       {% for activity in course.recent_activity %}
-        <div class="activity-item">
-            <div class="activity-icon">
-                <i class="fas fa-{% if activity.is_completed %}check-circle{% else %}book{% endif %}"></i>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="course-title">{{ course.title }}</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ progress_percentage }}%"></div>
+                </div>
+                <div class="progress-text">{{ progress_percentage }}% Complete</div>
             </div>
-                    <div class="activity-content">
-                        <div class="activity-title">
-                            {{ activity.lesson.title }}
-                        </div>
-                        <div class="activity-meta">
-                            {{ activity.lesson.module.course.title }} • 
-                            {{ activity.last_accessed|timesince }} ago
-                        </div>
-                    </div>
-                    <div class="activity-status">
-                        {% if activity.is_completed %}
-                        <span class="status-completed">Completed</span>
-                        {% else %}
-                        <span class="status-in-progress">In Progress</span>
-                        {% endif %}
-                    </div>
-           </div>
-                {% empty %}
-                <p class="no-activity">No recent activity</p>
+
+            <ul class="module-list">
+                {% if is_generated %}
+                    {% for chapter in course.chapters.all %}
+                        <li class="module-item {% if chapter == module %}active{% endif %}">
+                            {% if chapter.topics.first %}
+                                <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ chapter.topics.first.id }}" class="module-link">
+                                    <div class="module-icon">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <span class="module-title">{{ chapter.title }}</span>
+                                </a>
+                            {% else %}
+                                <span class="module-link disabled" style="opacity:0.6; cursor:not-allowed;">
+                                    <div class="module-icon">
+                                        <i class="fas fa-ban"></i>
+                                    </div>
+                                    <span class="module-title">{{ chapter.title }} (No topics)</span>
+                                </span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    {% for mod in course.modules.all %}
+                        <li class="module-item {% if mod == module %}active{% endif %}">
+                            {% if mod.lessons.first %}
+                                <a href="{% url 'learning' lesson_id=mod.lessons.first.id %}" class="module-link">
+                                    <div class="module-icon">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <span class="module-title">{{ mod.title }}</span>
+                                    <div class="module-status">
+                                        {% if mod in completed_modules %}✓{% endif %}
+                                    </div>
+                                </a>
+                            {% else %}
+                                <span class="module-link disabled" style="opacity:0.6; cursor:not-allowed;">
+                                    <div class="module-icon">
+                                        <i class="fas fa-ban"></i>
+                                    </div>
+                                    <span class="module-title">{{ mod.title }} (No lessons)</span>
+                                </span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content-area">
+           
+
+<div class="lesson-content">
+    <h2>{{ lesson.title }}</h2>
+   {% if is_generated %}
+    <div class="generated-content">{{ lesson.content|markdown }}</div>
+    
+    {% if quiz_questions %}
+        <div class="quiz-section">
+            <h3>Quiz Yourself</h3>
+            <form id="quiz-form" onsubmit="return validateQuiz(event);">
+    {% for question in quiz_questions %}
+        <div class="quiz-question" data-correct-answer="{{ question.correct_answer_key }}">
+            <p><strong>{{ forloop.counter }}. {{ question.question_text }}</strong></p>
+            <ul class="quiz-options">
+                {% for answer in question.answers.all %}
+                    <li>
+                        <input type="radio" id="q{{ forloop.parentloop.counter }}-{{ forloop.counter }}" name="question-{{ forloop.parentloop.counter }}" value="{{ answer.option_key }}">
+                        <label for="q{{ forloop.parentloop.counter }}-{{ forloop.counter }}">{{ answer.option_key }}. {{ answer.answer_text }}</label>
+                    </li>
                 {% endfor %}
-            </div>
-    
-                
-                <a href="{% url 'learning_default' %}" class="module-action">Learn Now</a>
-            </div>
-            {% endfor %}
+            </ul>
+            <div class="feedback-message" style="display: none;"></div>
         </div>
+    {% endfor %}
+    <div class="quiz-actions" style="margin-top: 20px;">
+        <button type="submit" class="nav-btn" style="background-color: var(--accent); color: white;">
+            Submit Answers
+        </button>
+        <button type="reset" class="nav-btn outline" style="margin-left: 10px;">
+            Reset Quiz
+        </button>
     </div>
-</main>
+</form>
+        </div>
+    {% endif %}
+
+{% else %}
+    {{ lesson.content|markdown }}
+{% endif %}
+</div>
+            <div class="content-footer">
+    {% if previous_lesson %}
+        {% if is_generated %}
+            <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ previous_lesson.id }}" class="nav-btn outline">
+                <i class="fas fa-arrow-left"></i> Previous: {{ previous_lesson.title }}
+            </a>
+        {% else %}
+            <a href="{% url 'learning' lesson_id=previous_lesson.id %}" class="nav-btn outline">
+                <i class="fas fa-arrow-left"></i> Previous: {{ previous_lesson.title }}
+            </a>
+        {% endif %}
+    {% endif %}
+
+    {% if next_lesson %}
+        {% if is_generated %}
+            <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ next_lesson.id }}" class="nav-btn">
+                Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
+            </a>
+        {% else %}
+            <a href="{% url 'learning' lesson_id=next_lesson.id %}" class="nav-btn">
+                Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
+            </a>
+        {% endif %}
+    {% endif %}
+</div>
+
+           <div class="completion-section" style="margin: 40px 0; text-align: center;">
+    {% if is_generated %}
+        <form method="post" action="{% url 'complete_generated_topic' topic_id=lesson.id %}" onsubmit="return validateQuiz(event);">
+            {% csrf_token %}
+            <button type="submit" class="nav-btn complete-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
+                <i class="fas fa-check-circle"></i> Mark Topic as Completed
+            </button>
+        </form>
+    {% else %}
+        <form method="post" action="{% url 'complete_lesson' lesson_id=lesson.id %}">
+            {% csrf_token %}
+            <button type="submit" class="nav-btn complete-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
+                <i class="fas fa-check-circle"></i> Mark Lesson as Completed
+            </button>
+        </form>
+    {% endif %}
+</div>
+        </main>
+    </div>
 
     <!-- Footer -->
     <footer>
@@ -1202,12 +1193,297 @@
             </div>
         </div>
     </footer>
+
     <script>
-        // Prevent back button after logout
-        history.pushState(null, null, location.href);
-        window.onpopstate = function() {
-            history.go(1);
-        };
-</script>
+// Quiz functionality with try-again feature
+let quizAttempts = 0;
+
+function initQuiz() {
+  // Quiz elements
+  const quizOptions = document.querySelectorAll('.quiz-option');
+  const quizButton = document.querySelector('.quiz-button');
+  const quizFeedback = document.getElementById('quiz-feedback');
+  
+  // Check if quiz elements exist
+  if (!quizOptions.length || !quizButton || !quizFeedback) {
+    return;
+  }
+  
+  // Add event listeners to quiz options
+  quizOptions.forEach(option => {
+    option.addEventListener('click', function() {
+      // Find all options in the same question group
+      const questionGroup = this.closest('.quiz-options');
+      const optionsInGroup = questionGroup.querySelectorAll('.quiz-option');
+      
+      // Remove selected class from all options in this group
+      optionsInGroup.forEach(opt => {
+        opt.classList.remove('selected');
+      });
+      
+      // Add selected class to clicked option
+      this.classList.add('selected');
+      
+      // Reset styling if user changes answer
+      this.classList.remove('correct', 'incorrect');
+    });
+  });
+  
+  // Add event listener to quiz button
+  quizButton.addEventListener('click', function() {
+    // Clear any previous feedback
+    quizFeedback.innerHTML = '';
+    quizFeedback.style.display = 'none';
+    
+    // Get all quiz questions
+    const questions = document.querySelectorAll('.quiz-question');
+    let answeredAll = true;
+    
+    // Process each question
+    questions.forEach(question => {
+      // Reset question styling
+      question.style.color = '';
+      question.style.fontWeight = '';
+      
+      // Find the options container for this question
+      const optionsContainer = question.nextElementSibling;
+      
+      // Check if it's a quiz-options container
+      if (!optionsContainer || !optionsContainer.classList.contains('quiz-options')) {
+        return;
+      }
+      
+      // Get all options for this question
+      const options = optionsContainer.querySelectorAll('.quiz-option');
+      let questionAnswered = false;
+      
+      // Check each option
+      options.forEach(option => {
+        if (option.classList.contains('selected')) {
+          questionAnswered = true;
+        }
+      });
+      
+      // If question not answered, mark it
+      if (!questionAnswered) {
+        answeredAll = false;
+        question.style.color = "#ef4444";
+        question.style.fontWeight = "bold";
+      }
+    });
+    
+    // If not all answered, show error
+    if (!answeredAll) {
+      quizAttempts++;
+      
+      let feedbackHTML = `
+        <i class='fas fa-exclamation-triangle'></i> 
+        Please answer all questions before submitting!
+      `;
+      
+      // Add hint on second attempt
+      if (quizAttempts > 1) {
+        feedbackHTML += `<div class="hint">You have ${questions.length - document.querySelectorAll('.quiz-option.selected').length} unanswered questions</div>`;
+      }
+      
+      quizFeedback.innerHTML = feedbackHTML;
+      quizFeedback.className = "quiz-feedback quiz-incorrect";
+      quizFeedback.style.display = "block";
+      
+      // Scroll to feedback
+      quizFeedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      return;
+    }
+    
+    // If all answered, calculate results
+    let correctCount = 0;
+    
+    // Process each question for scoring
+    questions.forEach(question => {
+      // Find the options container for this question
+      const optionsContainer = question.nextElementSibling;
+      
+      // Get all options for this question
+      const options = optionsContainer.querySelectorAll('.quiz-option');
+      
+      // Check each option
+      options.forEach(option => {
+        const isSelected = option.classList.contains('selected');
+        const isCorrect = option.getAttribute('data-correct') === 'true';
+        
+        if (isSelected) {
+          // Mark as correct/incorrect
+          if (isCorrect) {
+            option.classList.add('correct');
+            correctCount++;
+          } else {
+            option.classList.add('incorrect');
+          }
+        }
+        
+        // Also mark correct answer if not selected
+        if (isCorrect && !isSelected) {
+          option.classList.add('correct');
+        }
+      });
+    });
+    
+    // Generate feedback
+    let feedbackHTML = "";
+    const totalQuestions = questions.length;
+    const percentage = Math.round((correctCount / totalQuestions) * 100);
+    
+    if (percentage === 100) {
+      feedbackHTML = `<i class="fas fa-medal"></i> Perfect! You scored ${percentage}% (${correctCount}/${totalQuestions} correct)`;
+      quizFeedback.className = "quiz-feedback quiz-correct";
+    } else if (percentage >= 70) {
+      feedbackHTML = `<i class="fas fa-check-circle"></i> Well done! You scored ${percentage}% (${correctCount}/${totalQuestions} correct)`;
+      quizFeedback.className = "quiz-feedback quiz-correct";
+    } else {
+      feedbackHTML = `<i class="fas fa-redo"></i> Keep practicing! You scored ${percentage}% (${correctCount}/${totalQuestions} correct)`;
+      quizFeedback.className = "quiz-feedback quiz-incorrect";
+      
+      // Add try again button
+      feedbackHTML += `
+        <button id="try-again-button" class="try-again-btn">
+          <i class="fas fa-sync-alt"></i> Try Again
+        </button>
+      `;
+    }
+    
+    quizFeedback.innerHTML = feedbackHTML;
+    quizFeedback.style.display = "block";
+    
+    // Add event listener to try again button if it exists
+    const tryAgainButton = document.getElementById('try-again-button');
+    if (tryAgainButton) {
+      tryAgainButton.addEventListener('click', resetQuiz);
+    }
+    
+    // Scroll to feedback
+    quizFeedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  });
+}
+
+function resetQuiz() {
+  // Reset quiz state
+  quizAttempts = 0;
+  
+  // Clear feedback
+  const quizFeedback = document.getElementById('quiz-feedback');
+  if (quizFeedback) {
+    quizFeedback.style.display = 'none';
+  }
+  
+  // Clear all selections
+  document.querySelectorAll('.quiz-option').forEach(option => {
+    option.classList.remove('selected', 'correct', 'incorrect');
+  });
+  
+  // Reset question styles
+  document.querySelectorAll('.quiz-question').forEach(question => {
+    question.style.color = '';
+    question.style.fontWeight = '';
+  });
+}
+
+// Initialize the quiz when the page loads
+document.addEventListener('DOMContentLoaded', function() {
+  // Initialize quiz functionality
+  initQuiz();
+  
+  // Reinitialize quiz when content changes
+  const lessonContent = document.querySelector('.lesson-content');
+  
+  if (lessonContent) {
+    const observer = new MutationObserver(function(mutations) {
+      // Check if any nodes were added
+      const contentChanged = mutations.some(mutation => 
+        mutation.addedNodes.length > 0
+      );
+      
+      if (contentChanged) {
+        quizAttempts = 0;
+        initQuiz();
+      }
+    });
+    
+    observer.observe(lessonContent, {
+      childList: true,
+      subtree: true
+    });
+  }
+});
+ // Mobile sidebar toggle functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileToggle = document.getElementById('mobile-toggle');
+            const sidebar = document.getElementById('sidebar');
+            const sidebarOverlay = document.getElementById('sidebar-overlay');
+            
+            // Toggle sidebar function
+            function toggleSidebar() {
+                sidebar.classList.toggle('active');
+                sidebarOverlay.classList.toggle('active');
+                
+                // Change icon based on state
+                if (sidebar.classList.contains('active')) {
+                    mobileToggle.innerHTML = '<i class="fas fa-times"></i>';
+                } else {
+                    mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                }
+            }
+            
+            // Add event listeners
+            mobileToggle.addEventListener('click', toggleSidebar);
+            sidebarOverlay.addEventListener('click', toggleSidebar);
+            
+            // Close sidebar when clicking on a module item (mobile only)
+            if (window.innerWidth < 768) {
+                document.querySelectorAll('.module-item').forEach(item => {
+                    item.addEventListener('click', function() {
+                        sidebar.classList.remove('active');
+                        sidebarOverlay.classList.remove('active');
+                        mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
+                    });
+                });
+            }
+        });
+
+        function validateQuiz(event) {
+        // Prevent the form from submitting by default
+        event.preventDefault();
+
+        const questions = document.querySelectorAll('.quiz-question');
+        let allCorrect = true;
+
+        questions.forEach(questionDiv => {
+            const correctOption = questionDiv.dataset.correctAnswer;
+            const selectedOption = questionDiv.querySelector('input:checked');
+            const feedbackDiv = questionDiv.querySelector('.feedback-message');
+            
+            // Clear previous feedback
+            feedbackDiv.style.display = 'none';
+
+            if (!selectedOption) {
+                allCorrect = false;
+                feedbackDiv.textContent = 'Please select an answer.';
+                feedbackDiv.style.color = 'red';
+                feedbackDiv.style.display = 'block';
+            } else if (selectedOption.value !== correctOption) {
+                allCorrect = false;
+                feedbackDiv.textContent = 'Incorrect answer. Please try again.';
+                feedbackDiv.style.color = 'red';
+                feedbackDiv.style.display = 'block';
+            }
+        });
+
+        // If all questions are answered correctly, submit the form
+        if (allCorrect) {
+            event.target.submit();
+        }
+        
+        return allCorrect;
+    }
+    </script>
 </body>
 </html>

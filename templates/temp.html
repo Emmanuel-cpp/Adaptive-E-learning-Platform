@@ -1,684 +1,791 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Function Overloading - CSU Learn</title>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    }
-    
-    body {
-      background-color: #f5f7fa;
-      color: #333;
-      line-height: 1.6;
-      padding: 20px;
-    }
-    
-    .lesson-content {
-      max-width: 900px;
-      margin: 0 auto;
-      background: white;
-      border-radius: 15px;
-      box-shadow: 0 5px 25px rgba(0, 0, 0, 0.08);
-      overflow: hidden;
-    }
-    
-    .lesson-header {
-      background: linear-gradient(135deg, #1e3a8a, #3b82f6);
-      color: white;
-      padding: 25px 30px;
-      position: relative;
-    }
-    
-    .lesson-title {
-      font-size: 32px;
-      font-weight: 700;
-      margin-bottom: 10px;
-    }
-    
-    .lesson-subtitle {
-      font-size: 18px;
-      opacity: 0.9;
-      margin-bottom: 15px;
-    }
-    
-    .progress-container {
-      background: rgba(255, 255, 255, 0.2);
-      border-radius: 10px;
-      height: 12px;
-      margin-top: 15px;
-    }
-    
-    .progress-bar {
-      height: 100%;
-      background: linear-gradient(90deg, #34d399, #10b981);
-      border-radius: 10px;
-      width: 52%;
-    }
-    
-    .lesson-section {
-      padding: 30px;
-      border-bottom: 1px solid #eaeaea;
-    }
-    
-    .section-title {
-      font-size: 24px;
-      color: #1e3a8a;
-      margin-bottom: 20px;
-      padding-bottom: 10px;
-      border-bottom: 2px solid #e0e7ff;
-      display: flex;
-      align-items: center;
-    }
-    
-    .section-title i {
-      margin-right: 10px;
-    }
-    
-    .section-content {
-      margin-left: 10px;
-    }
-    
-    .section-content p {
-      margin-bottom: 15px;
-      font-size: 17px;
-      color: #444;
-    }
-    
-    .code-block {
-      background: #1e293b;
-      border-radius: 8px;
-      padding: 20px;
-      margin: 20px 0;
-      overflow-x: auto;
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    }
-    
-    pre {
-      color: #e2e8f0;
-      font-family: 'Consolas', 'Courier New', monospace;
-      font-size: 15px;
-      line-height: 1.5;
-      white-space: pre-wrap;
-    }
-    
-    .code-keyword {
-      color: #60a5fa;
-      font-weight: bold;
-    }
-    
-    .code-function {
-      color: #c084fc;
-    }
-    
-    .code-string {
-      color: #34d399;
-    }
-    
-    .code-comment {
-      color: #94a3b8;
-      font-style: italic;
-    }
-    
-    .note-box, .warning-box {
-      padding: 18px;
-      border-radius: 10px;
-      margin: 25px 0;
-      position: relative;
-    }
-    
-    .note-box {
-      background: linear-gradient(to right, #f0fdf4, #dcfce7);
-      border-left: 4px solid #34d399;
-    }
-    
-    .warning-box {
-      background: linear-gradient(to right, #fef3c7, #fffbeb);
-      border-left: 4px solid #f59e0b;
-    }
-    
-    .note-title, .warning-title {
-      display: flex;
-      align-items: center;
-      font-weight: 600;
-      margin-bottom: 10px;
-      font-size: 18px;
-    }
-    
-    .note-title i {
-      color: #34d399;
-      margin-right: 10px;
-      font-size: 20px;
-    }
-    
-    .warning-title i {
-      color: #f59e0b;
-      margin-right: 10px;
-      font-size: 20px;
-    }
-    
-    .exercise-box {
-      background: linear-gradient(to right, #f5f3ff, #ede9fe);
-      border-radius: 12px;
-      padding: 25px;
-      margin: 30px 0;
-      border-left: 4px solid #8b5cf6;
-    }
-    
-    .exercise-title {
-      font-size: 22px;
-      color: #7c3aed;
-      margin-bottom: 15px;
-      display: flex;
-      align-items: center;
-    }
-    
-    .exercise-title i {
-      margin-right: 10px;
-    }
-    
-    .exercise-options {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin: 20px 0;
-    }
-    
-    .exercise-option {
-      background: white;
-      border: 2px dashed #cbd5e1;
-      padding: 12px 20px;
-      border-radius: 8px;
-      cursor: grab;
-      transition: all 0.3s ease;
-      font-family: 'Consolas', monospace;
-      font-size: 15px;
-      user-select: none;
-    }
-    
-    .exercise-option:hover {
-      background: #f1f5f9;
-      border-color: #8b5cf6;
-      transform: translateY(-3px);
-      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
-    }
-    
-    .exercise-option:active {
-      cursor: grabbing;
-    }
-    
-    .exercise-dropzone {
-      min-height: 60px;
-      border: 2px dashed #cbd5e1;
-      border-radius: 8px;
-      padding: 15px;
-      margin: 20px 0;
-      text-align: center;
-      font-size: 16px;
-      color: #64748b;
-      background: white;
-      transition: all 0.3s ease;
-    }
-    
-    .exercise-dropzone.active {
-      border-color: #8b5cf6;
-      background: #f5f3ff;
-      color: #7c3aed;
-    }
-    
-    .exercise-button {
-      background: linear-gradient(135deg, #7c3aed, #6d28d9);
-      color: white;
-      border: none;
-      padding: 12px 30px;
-      border-radius: 8px;
-      font-size: 16px;
-      font-weight: 600;
-      cursor: pointer;
-      transition: all 0.3s ease;
-      display: block;
-      margin: 0 auto;
-    }
-    
-    .exercise-button:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-    }
-    
-    .exercise-feedback {
-      margin-top: 20px;
-      padding: 15px;
-      border-radius: 8px;
-      text-align: center;
-      font-weight: 500;
-      font-size: 17px;
-      display: none;
-    }
-    
-    .feedback-correct {
-      background: #f0fdf4;
-      color: #166534;
-      border: 1px solid #bbf7d0;
-      display: block;
-    }
-    
-    .feedback-incorrect {
-      background: #fef2f2;
-      color: #b91c1c;
-      border: 1px solid #fecaca;
-      display: block;
-    }
-    
-    .key-points {
-      padding: 0 20px;
-      margin: 20px 0;
-    }
-    
-    .key-points li {
-      margin-bottom: 12px;
-      padding-left: 25px;
-      position: relative;
-      font-size: 17px;
-    }
-    
-    .key-points li:before {
-      content: "•";
-      color: #7c3aed;
-      font-size: 24px;
-      position: absolute;
-      left: 0;
-      top: -3px;
-    }
-    
-    .lesson-footer {
-      display: flex;
-      justify-content: space-between;
-      padding: 25px 30px;
-      background: #f8fafc;
-    }
-    
-    .nav-btn {
-      padding: 12px 25px;
-      border-radius: 8px;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      text-decoration: none;
-      transition: all 0.3s ease;
-    }
-    
-    .prev-btn {
-      background: #e0e7ff;
-      color: #4f46e5;
-      border: 2px solid #c7d2fe;
-    }
-    
-    .prev-btn:hover {
-      background: #c7d2fe;
-    }
-    
-    .next-btn {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white;
-    }
-    
-    .next-btn:hover {
-      transform: translateY(-3px);
-      box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
-    }
-    
-    .dragging {
-      opacity: 0.5;
-      transform: scale(0.95);
-    }
-    
-    @media (max-width: 768px) {
-      .lesson-content {
-        border-radius: 10px;
-      }
-      
-      .lesson-header {
-        padding: 20px;
-      }
-      
-      .lesson-title {
-        font-size: 26px;
-      }
-      
-      .section-title {
-        font-size: 22px;
-      }
-      
-      .exercise-options {
-        flex-direction: column;
-      }
-      
-      .lesson-footer {
-        flex-direction: column;
-        gap: 15px;
-      }
-      
-      .nav-btn {
-        justify-content: center;
-      }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBU Learn - Dashboard</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0d47a1;
+            --accent: #00897b;
+            --dark: #1a237e;
+            --light: #f5f5f5;
+            --gray: #37474f;
+            --light-gray: #e0e0e0;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --transition: all 0.3s ease;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        header {
+            background: rgba(13, 71, 161, 0.95);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+        }
+
+        .logo {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-icon {
+            background: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .nav-link {
+            color: white;
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+            padding: 8px 0;
+            position: relative;
+        }
+
+        .nav-link.active::after {
+            content: "";
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: white;
+            border-radius: 3px;
+        }
+
+        .nav-link:hover {
+            opacity: 0.9;
+        }
+
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        /* Main Content */
+        .main-content {
+            padding: 100px 0 40px;
+            flex: 1;
+        }
+
+        .welcome-banner {
+            background: linear-gradient(135deg, var(--primary), var(--dark));
+            color: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .welcome-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .welcome-subtitle {
+            font-size: 1.1rem;
+            opacity: 0.9;
+            max-width: 700px;
+        }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+
+        .dashboard-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .card-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.3rem;
+            color: var(--dark);
+        }
+
+        .card-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            background: rgba(13, 71, 161, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.5rem;
+        }
+
+        .progress-container {
+            margin-bottom: 20px;
+        }
+
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .progress-label {
+            font-size: 0.95rem;
+            color: var(--gray);
+        }
+
+        .progress-percent {
+            font-weight: 600;
+            color: var(--dark);
+        }
+
+        .progress-bar {
+            height: 10px;
+            background: var(--light-gray);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            border-radius: 5px;
+        }
+
+        .module-list {
+            list-style: none;
+        }
+
+        .module-item {
+            padding: 15px 0;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .module-item:last-child {
+            border-bottom: none;
+        }
+
+        .module-title {
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .module-status {
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .status-completed {
+            color: var(--success);
+        }
+
+        .status-in-progress {
+            color: var(--warning);
+        }
+
+        .module-action {
+            background: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 15px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .module-action:hover {
+            background: var(--dark);
+            transform: translateY(-2px);
+        }
+
+        .recommendations {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .recommendation-card {
+            background: var(--light);
+            border-radius: 10px;
+            padding: 20px;
+            transition: var(--transition);
+            border: 1px solid rgba(13, 71, 161, 0.1);
+        }
+
+        .recommendation-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .rec-title {
+            font-weight: 600;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .rec-description {
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-bottom: 15px;
+        }
+
+        .rec-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--gray);
+        }
+
+        .quick-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .action-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+            transition: var(--transition);
+            cursor: pointer;
+        }
+
+        .action-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, rgba(13, 71, 161, 0.03), rgba(0, 137, 123, 0.03));
+        }
+
+        .action-icon {
+            width: 60px;
+            height: 60px;
+            margin: 0 auto 15px;
+            background: rgba(13, 71, 161, 0.1);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.8rem;
+        }
+
+        .action-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+            color: var(--dark);
+        }
+
+        .action-description {
+            color: var(--gray);
+            font-size: 0.95rem;
+        }
+
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 30px 0 15px;
+        }
+
+        .copyright {
+            text-align: center;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #adb5bd;
+            font-size: 0.85rem;
+        }
+
+        /* Responsive Design */
+        @media (max-width: 992px) {
+            .welcome-title {
+                font-size: 1.6rem;
+            }
+
+            .nav-links {
+                gap: 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 90px 0 30px;
+            }
+
+            .nav-links {
+                display: none;
+            }
+
+            .welcome-banner {
+                padding: 20px;
+            }
+
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .quick-actions {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .welcome-title {
+                font-size: 1.4rem;
+            }
+
+            .welcome-subtitle {
+                font-size: 1rem;
+            }
+
+            .dashboard-card {
+                padding: 20px;
+            }
+
+            .card-title {
+                font-size: 1.2rem;
+            }
+        }
+    </style>
 </head>
 <body>
-  <div class="lesson-content">
-    <div class="lesson-header">
-      <h1 class="lesson-title">Function Overloading</h1>
-      <p class="lesson-subtitle">Using the same function name for different operations</p>
-      <div class="progress-container">
-        <div class="progress-bar"></div>
-      </div>
-    </div>
-    
-    <div class="lesson-section">
-      <h2 class="section-title"><i class="fas fa-cogs"></i> Function Overloading</h2>
-      <div class="section-content">
-        <p>Function overloading allows multiple functions to have the same name, as long as their parameters are different in type or number. This lets you use the same function name for similar tasks.</p>
-        
-        <div class="note-box">
-          <div class="note-title">
-            <i class="fas fa-lightbulb"></i>
-            <span>Key Concept</span>
-          </div>
-          <p>Overloaded functions must differ in their parameter types or number of parameters. The return type alone is not sufficient to differentiate functions.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="lesson-section">
-      <h2 class="section-title"><i class="fas fa-exclamation-triangle"></i> Without Function Overloading</h2>
-      <div class="section-content">
-        <p>Consider this example with two functions that add numbers of different types:</p>
-        
-        <div class="code-block">
-          <pre><span class="code-keyword">int</span> <span class="code-function">plusFuncInt</span>(<span class="code-keyword">int</span> x, <span class="code-keyword">int</span> y) {
-    <span class="code-keyword">return</span> x + y;
-}
-
-<span class="code-keyword">double</span> <span class="code-function">plusFuncDouble</span>(<span class="code-keyword">double</span> x, <span class="code-keyword">double</span> y) {
-    <span class="code-keyword">return</span> x + y;
-}
-
-<span class="code-keyword">int</span> <span class="code-function">main</span>() {
-    <span class="code-keyword">int</span> myNum1 = <span class="code-function">plusFuncInt</span>(8, 5);
-    <span class="code-keyword">double</span> myNum2 = <span class="code-function">plusFuncDouble</span>(4.3, 6.26);
-
-    cout &lt;&lt; <span class="code-string">"Int: "</span> &lt;&lt; myNum1 &lt;&lt; endl;
-    cout &lt;&lt; <span class="code-string">"Double: "</span> &lt;&lt; myNum2;
-    <span class="code-keyword">return</span> 0;
-}</pre>
-        </div>
-
-        <div class="warning-box">
-          <div class="warning-title">
-            <i class="fas fa-exclamation-circle"></i>
-            <span>Problem</span>
-          </div>
-          <p>We had to create two different function names for essentially the same logic. This makes the API harder to remember and use.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="lesson-section">
-      <h2 class="section-title"><i class="fas fa-check-circle"></i> Using Function Overloading</h2>
-      <div class="section-content">
-        <p>Instead of defining two functions with different names, we can overload one function name to work for both int and double types:</p>
-        
-        <div class="code-block">
-          <pre><span class="code-keyword">int</span> <span class="code-function">plusFunc</span>(<span class="code-keyword">int</span> x, <span class="code-keyword">int</span> y) {
-    <span class="code-keyword">return</span> x + y;
-}
-
-<span class="code-keyword">double</span> <span class="code-function">plusFunc</span>(<span class="code-keyword">double</span> x, <span class="code-keyword">double</span> y) {
-    <span class="code-keyword">return</span> x + y;
-}
-
-<span class="code-keyword">int</span> <span class="code-function">main</span>() {
-    <span class="code-keyword">int</span> myNum1 = <span class="code-function">plusFunc</span>(8, 5);
-    <span class="code-keyword">double</span> myNum2 = <span class="code-function">plusFunc</span>(4.3, 6.26);
-
-    cout &lt;&lt; <span class="code-string">"Int: "</span> &lt;&lt; myNum1 &lt;&lt; endl;
-    cout &lt;&lt; <span class="code-string">"Double: "</span> &lt;&lt; myNum2;
-    <span class="code-keyword">return</span> 0;
-}</pre>
-        </div>
-
-        <div class="note-box">
-          <div class="note-title">
-            <i class="fas fa-info-circle"></i>
-            <span>Important Note</span>
-          </div>
-          <p>Multiple functions can have the same name as long as the number and/or type of parameters are different. The compiler selects the appropriate function based on the arguments provided.</p>
-        </div>
-      </div>
-    </div>
-
-    <div class="lesson-section">
-      <h2 class="section-title"><i class="fas fa-sort-numeric-up"></i> Overloading by Number of Parameters</h2>
-      <div class="section-content">
-        <p>You can also overload functions by using a different number of parameters:</p>
-        
-        <div class="code-block">
-          <pre><span class="code-keyword">int</span> <span class="code-function">plusFunc</span>(<span class="code-keyword">int</span> x, <span class="code-keyword">int</span> y) {
-    <span class="code-keyword">return</span> x + y;
-}
-
-<span class="code-keyword">int</span> <span class="code-function">plusFunc</span>(<span class="code-keyword">int</span> x, <span class="code-keyword">int</span> y, <span class="code-keyword">int</span> z) {
-    <span class="code-keyword">return</span> x + y + z;
-}
-
-<span class="code-keyword">int</span> <span class="code-function">main</span>() {
-    <span class="code-keyword">int</span> result1 = <span class="code-function">plusFunc</span>(3, 7);
-    <span class="code-keyword">int</span> result2 = <span class="code-function">plusFunc</span>(1, 2, 3);
-
-    cout &lt;&lt; <span class="code-string">"Sum of 2 numbers: "</span> &lt;&lt; result1 &lt;&lt; endl;
-    cout &lt;&lt; <span class="code-string">"Sum of 3 numbers: "</span> &lt;&lt; result2;
-    <span class="code-keyword">return</span> 0;
-}</pre>
-        </div>
-      </div>
-    </div>
-
-    <div class="lesson-section">
-      <h2 class="section-title"><i class="fas fa-pencil-alt"></i> Exercise</h2>
-      <div class="section-content">
-        <p>Drag and drop the correct argument to call the overloaded function that greets by name.</p>
-        
-        <div class="code-block">
-          <pre><span class="code-keyword">void</span> <span class="code-function">greet</span>() {
-    cout &lt;&lt; <span class="code-string">"Hello!"</span>;
-}
-
-<span class="code-keyword">void</span> <span class="code-function">greet</span>(string name) {
-    cout &lt;&lt; <span class="code-string">"Hello, "</span> &lt;&lt; name;
-}
-
-<span class="code-keyword">int</span> <span class="code-function">main</span>() {
-    <span class="code-function">greet</span>();
-    <span class="code-comment">// Call the function that greets by name</span>
-    <span class="code-keyword">return</span> 0;
-}</pre>
-    </div>
-
-        <div class="exercise-box">
-          <div class="exercise-title">
-            <i class="fas fa-question-circle"></i>
-            Which of these would correctly call the function that greets by name?
-          </div>
-          
-          <div class="exercise-options">
-            <div class="exercise-option" draggable="true" data-correct="true">greet("Alice");</div>
-            <div class="exercise-option" draggable="true">greet(Alice);</div>
-            <div class="exercise-option" draggable="true">greet(string Alice);</div>
-            <div class="exercise-option" draggable="true">greet name("Alice");</div>
-          </div>
-          
-          <div class="exercise-dropzone" id="dropZone">Drag your answer here</div>
-          
-          <button class="exercise-button" id="checkBtn">Check Answer</button>
-          
-          <div class="exercise-feedback" id="feedback"></div>
-        </div>
-      </div>
-    </div>
-
-    <div class="lesson-section">
-      <h2 class="section-title"><i class="fas fa-key"></i> Key Takeaways</h2>
-      <div class="section-content">
-        <ul class="key-points">
-          <li>Function overloading allows multiple functions with the same name but different parameters</li>
-          <li>Parameters must differ in type, number, or both to allow overloading</li>
-          <li>Return type alone is <strong>not</strong> sufficient to differentiate overloaded functions</li>
-          <li>Overloading makes APIs more intuitive and reduces the need for unique function names</li>
-          <li>Compiler selects the appropriate function based on arguments provided</li>
-          <li>Overloading improves code readability and maintainability</li>
-        </ul>
-      </div>
-    </div>
-    
-    <div class="lesson-footer">
-      <a href="#" class="nav-btn prev-btn">
-        <i class="fas fa-arrow-left"></i> Previous Lesson
-      </a>
-      <a href="#" class="nav-btn next-btn">
-        Next Lesson <i class="fas fa-arrow-right"></i>
-      </a>
-    </div>
-  </div>
-
-  <script>
-    document.addEventListener('DOMContentLoaded', function() {
-      // Drag and drop functionality
-      const options = document.querySelectorAll('.exercise-option');
-      const dropZone = document.getElementById('dropZone');
-      const checkBtn = document.getElementById('checkBtn');
-      const feedback = document.getElementById('feedback');
-      let draggedOption = null;
-      let correctOption = null;
-      
-      // Add event listeners for draggable options
-      options.forEach(option => {
-        option.addEventListener('dragstart', function(e) {
-          draggedOption = this;
-          this.classList.add('dragging');
-          e.dataTransfer.setData('text/plain', this.textContent);
-        });
-        
-        option.addEventListener('dragend', function() {
-          this.classList.remove('dragging');
-        });
-      });
-      
-      // Add event listeners for drop zone
-      dropZone.addEventListener('dragover', function(e) {
-        e.preventDefault();
-        this.classList.add('active');
-      });
-      
-      dropZone.addEventListener('dragleave', function() {
-        this.classList.remove('active');
-      });
-      
-      dropZone.addEventListener('drop', function(e) {
-        e.preventDefault();
-        this.classList.remove('active');
-        
-        if (draggedOption) {
-          // Clear previous content
-          this.innerHTML = '';
-          
-          // Create a clone of the dragged option
-          const clone = draggedOption.cloneNode(true);
-          clone.classList.remove('dragging');
-          clone.draggable = false;
-          clone.style.cursor = 'default';
-          clone.style.borderStyle = 'solid';
-          clone.style.borderColor = '#8b5cf6';
-          clone.style.backgroundColor = '#f5f3ff';
-          
-          this.appendChild(clone);
-          
-          // Store the correct status
-          correctOption = draggedOption.getAttribute('data-correct') === 'true';
-          
-          // Reset dragged option reference
-          draggedOption = null;
-        }
-      });
-      
-      // Check answer button
-      checkBtn.addEventListener('click', function() {
-        if (!dropZone.querySelector('.exercise-option')) {
-          feedback.textContent = 'Please drag an answer to the drop zone first!';
-          feedback.className = 'exercise-feedback feedback-incorrect';
-          return;
-        }
-        
-        if (correctOption) {
-          feedback.innerHTML = `
-            <i class="fas fa-check-circle"></i> Correct! 
-            You've successfully called the overloaded function that greets by name.
-          `;
-          feedback.className = 'exercise-feedback feedback-correct';
-        } else {
-          feedback.innerHTML = `
-            <i class="fas fa-times-circle"></i> Incorrect. 
-            The correct answer is: <strong>greet("Alice");</strong>
-          `;
-          feedback.className = 'exercise-feedback feedback-incorrect';
-        }
-      });
-    });
-  </script>
-</body>
-</html>
-
- <!-- Display error messages -->
-            {% if messages %}
-            <div class="messages" style="margin:10px 0;">
-                {% for message in messages %}
-                <div 
-                    style="
-                        padding:10px 15px;
-                        margin-bottom:8px;
-                        border-radius:6px;
-                        font-size:14px;
-                        {% if message.tags == 'error' %}
-                            background:#fde2e1; 
-                            color:#a94442; 
-                            border:1px solid #f5c2c2;
-                        {% elif message.tags == 'success' %}
-                            background:#e2f7e1; 
-                            color:#2e7d32; 
-                            border:1px solid #a5d6a7;
-                        {% elif message.tags == 'warning' %}
-                            background:#fff8e1; 
-                            color:#856404; 
-                            border:1px solid #ffe58f;
-                        {% else %}
-                            background:#e7f3fe; 
-                            color:#31708f; 
-                            border:1px solid #b3d7ff;
-                        {% endif %}
-                    ">
-                    {{ message }}
+    <header>
+        <div class="container">
+            <nav>
+                <a href="{% url 'dashboard' %}" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <span class="logo-text">CBU Learn</span>
+                </a>
+                <div class="nav-links">
+                    <a href="{% url 'dashboard' %}" class="nav-link active">Dashboard</a>
+                    <a href="{% url 'learning_default' %}" class="nav-link">Learning</a>
+                    <a href="{% url 'dashboard' %}" class="nav-link">Assessments</a>
+                    <a href="{% url 'dashboard' %}" class="nav-link">Resources</a>
+                    <a href="{% url 'dashboard' %}" class="nav-link">Progress</a>
                 </div>
+                <div class="user-menu">
+                    <div class="user-avatar">JS</div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="welcome-banner">
+                <h1 class="welcome-title">Welcome back, {{ student.first_name }}!</h1>
+                <p class="welcome-subtitle">Continue your journey to master C++ programming fundamentals.</p>
+            </div>
+
+            <div class="dashboard-grid">
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Overall Progress</h2>
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                    </div>
+                    <div class="progress-container">
+                        <div class="progress-header">
+                            <span class="progress-label">Completion Rate</span>
+                            <span class="progress-percent">{{ overall_progress }}%</span>
+                        </div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ overall_progress }}%"></div>
+                        </div>
+                    </div>
+                    <div class="progress-info">
+                        <p class="progress-summary">{{ total_completed }} of {{ total_lessons }} lessons completed</p>
+                    </div>
+                </div>
+
+                <div class="dashboard-card action-card" onclick="openGenerateCourseModal()">
+                    <div class="action-icon">
+                        <i class="fas fa-rocket"></i>
+                    </div>
+                    <h3 class="action-title">Generate a new course</h3>
+                    <p class="action-description">Create a personalized e-learning course on any topic in minutes.</p>
+                </div>
+
+                <div class="dashboard-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Recent Activity</h2>
+                        <div class="card-icon">
+                            <i class="fas fa-history"></i>
+                        </div>
+                    </div>
+                    <ul class="activity-list">
+                        {% for activity in recent_activity %}
+                            <li class="activity-item">
+                                <a href="{% url 'learning' lesson_id=activity.lesson.id %}">
+                                    <div class="activity-details">
+                                        <span class="activity-title">{{ activity.lesson.title }}</span>
+                                        <span class="activity-course">{{ activity.lesson.module.course.title }} - {{ activity.lesson.module.title }}</span>
+                                        <span class="activity-time">Last accessed: {{ activity.last_accessed|timesince }} ago</span>
+                                    </div>
+                                </a>
+                            </li>
+                        {% empty %}
+                            <p class="no-activity">No recent activity found. Start a course to see your progress here!</p>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                {% for course in progress_data %}
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h2 class="card-title">{{ course.course.title }}</h2>
+                            <div class="card-icon">
+                                <i class="fas fa-book"></i>
+                            </div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-header">
+                                <span class="progress-label">Course Progress</span>
+                                <span class="progress-percent">{{ course.progress }}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ course.progress }}%"></div>
+                            </div>
+                        </div>
+                        <a href="{% url 'learning_default' %}" class="module-action">Continue Learning</a>
+                    </div>
                 {% endfor %}
             </div>
-            {% endif %}
+        </div>
+    </main>
 
+    <footer>
+        <div class="container">
+            <div class="copyright">
+                <p>&copy; 2024 Copperbelt University - School of ICT. All rights reserved.</p>
+                <p>Adaptive E-Learning Platform for First Year ICT Students</p>
+            </div>
+        </div>
+    </footer>
 
+    {% include 'courses/generate_course_modal.html' %}
 
-            <div class="user-menu">
-                    <div class="user-avatar">{{user.first_name|slice:":1"}}{{user.last_name|slice:":1"}}</div>
-                </div>
+    <style>
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1001;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0, 0, 0, 0.6);
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+            animation: slideIn 0.3s ease-out;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(-50px);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .modal-header {
+            padding: 20px 25px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            font-size: 1.5rem;
+            color: var(--dark);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.8rem;
+            color: #aaa;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .modal-close:hover {
+            color: #555;
+        }
+        
+        .modal-body {
+            padding: 25px;
+            overflow-y: auto;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--gray);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.1);
+        }
+        
+        textarea.form-control {
+            resize: vertical;
+        }
+        
+        .modal-footer {
+            padding: 20px 25px;
+            border-top: 1px solid #e0e0e0;
+            text-align: right;
+        }
+        
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background: var(--dark);
+        }
+
+        .loader {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #ffffff;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: none;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .text-info {
+            font-size: 0.9em;
+            color: #777;
+            margin-top: 5px;
+        }
+        
+        #generate-button {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+    </style>
+
+    <script>
+        function openGenerateCourseModal() {
+            document.getElementById('generate-course-modal').style.display = 'flex';
+        }
+
+        function closeGenerateCourseModal() {
+            document.getElementById('generate-course-modal').style.display = 'none';
+        }
+
+        function getCSRFToken() {
+            const cookieValue = document.cookie
+                .split('; ')
+                .find(row => row.startsWith('csrftoken='))
+                ?.split('=')[1];
+            return cookieValue;
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const generateForm = document.getElementById('generate-course-form');
+            if (generateForm) {
+                generateForm.addEventListener('submit', async function(event) {
+                    event.preventDefault();
+
+                    document.getElementById('generate-icon').style.display = 'none';
+                    document.getElementById('generate-text').style.display = 'none';
+                    document.getElementById('generate-loader').style.display = 'inline-block';
+                    
+                    const formData = {
+                        name: document.getElementById('course-name').value,
+                        description: document.getElementById('course-description').value,
+                        noOfChapters: parseInt(document.getElementById('chapter-count').value),
+                        level: document.getElementById('course-level').value,
+                        category: document.getElementById('course-category').value,
+                        includeVideo: document.getElementById('include-video').checked
+                    };
+
+                    const csrfToken = getCSRFToken();
+
+                    try {
+                        const response = await fetch('{% url "generate_course" %}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRFToken': csrfToken
+                            },
+                            body: JSON.stringify(formData)
+                        });
+
+                        const contentType = response.headers.get('content-type');
+                        if (!contentType || !contentType.includes('application/json')) {
+                            throw new Error('Server did not return JSON. Check URL or view.');
+                        }
+
+                        const data = await response.json();
+
+                        if (data.success) {
+                            // The corrected line: change the URL to the learning page
+                            window.location.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.first_topic_id}`;
+                        } else {
+                            // Existing error handling
+                            alert('Error generating course: ' + data.error);
+                            document.getElementById('generate-icon').style.display = 'inline';
+                            document.getElementById('generate-text').style.display = 'inline';
+                            document.getElementById('generate-loader').style.display = 'none';
+                        }
+                    } catch (error) {
+                        alert('Error generating course: ' + error.message);
+                        document.getElementById('generate-icon').style.display = 'inline';
+                        document.getElementById('generate-text').style.display = 'inline';
+                        document.getElementById('generate-loader').style.display = 'none';
+                    }
+                });
+            }
+        });
+    </script>
+</body>
+</html>

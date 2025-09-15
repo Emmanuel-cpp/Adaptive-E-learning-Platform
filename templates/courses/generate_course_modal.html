@@ -1,0 +1,277 @@
+<!-- templates/courses/generate_course_modal.html -->
+<div id="generate-course-modal" class="modal" style="display: none;">
+    <div class="modal-overlay" onclick="closeGenerateCourseModal()"></div>
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Create New Course Using AI</h2>
+            <button class="modal-close" onclick="closeGenerateCourseModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="generate-course-form">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="course-name">Course Name</label>
+                    <input type="text" id="course-name" name="name" class="form-control" 
+                           placeholder="e.g., Advanced C++ Programming" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="course-description">Course Description (Optional)</label>
+                    <textarea id="course-description" name="description" class="form-control" 
+                              placeholder="Brief description of what you want to learn" rows="3"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="chapter-count">Number of Chapters</label>
+                    <input type="number" id="chapter-count" name="noOfChapters" class="form-control" 
+                           min="1" max="10" required>
+                    <small class="help-text">Recommended: 3-5 chapters for optimal learning</small>
+                </div>
+                
+                <div class="form-group">
+                    <label for="include-video">
+                        <input type="checkbox" id="include-video" name="includeVideo">
+                        Include Video Content
+                    </label>
+                </div>
+                
+                <div class="form-group">
+                    <label for="difficulty-level">Difficulty Level</label>
+                    <select id="difficulty-level" name="level" class="form-control" required>
+                        <option value="beginner" selected>Beginner</option>
+                        <option value="moderate">Moderate</option>
+                        <option value="advanced">Advanced</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="course-category">Category</label>
+                    <input type="text" id="course-category" name="category" class="form-control" 
+                           placeholder="e.g., Programming, C++, Computer Science" required>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-secondary" onclick="closeGenerateCourseModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        <span id="generate-icon">✨</span>
+                        <span id="generate-text">Generate Course</span>
+                        <span id="generate-loader" style="display: none;">
+                            <i class="fas fa-spinner fa-spin"></i> Generating...
+                        </span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Add to your existing CSS */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .modal-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-content {
+        background: white;
+        border-radius: 12px;
+        width: 90%;
+        max-width: 500px;
+        max-height: 90vh;
+        overflow-y: auto;
+        z-index: 1001;
+        position: relative;
+        box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+    }
+
+    .modal-header {
+        padding: 20px;
+        border-bottom: 1px solid var(--light-gray);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h2 {
+        margin: 0;
+        font-family: 'Montserrat', sans-serif;
+        color: var(--dark);
+    }
+
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 1.5rem;
+        cursor: pointer;
+        color: var(--gray);
+    }
+
+    .modal-body {
+        padding: 20px;
+    }
+
+    .form-group {
+        margin-bottom: 20px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 8px;
+        font-weight: 500;
+        color: var(--gray);
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 12px;
+        border: 1px solid var(--light-gray);
+        border-radius: 6px;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(13, 71, 161, 0.1);
+    }
+
+    .form-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        margin-top: 25px;
+    }
+    
+    .help-text {
+        display: block;
+        margin-top: 5px;
+        font-size: 0.8rem;
+        color: var(--gray);
+    }
+</style>
+
+<script>
+    document.getElementById('generate-course-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    console.log("=== STEP 1: FORM SUBMISSION STARTED ===");
+    
+    // Show loading state
+    document.getElementById('generate-icon').style.display = 'none';
+    document.getElementById('generate-text').style.display = 'none';
+    document.getElementById('generate-loader').style.display = 'inline';
+    });
+    // Function to open the modal
+    function openGenerateCourseModal() {
+        document.getElementById('generate-course-modal').style.display = 'flex';
+        // Reset form when opening
+        document.getElementById('generate-course-form').reset();
+    }
+    
+    // Function to close the modal
+    function closeGenerateCourseModal() {
+        document.getElementById('generate-course-modal').style.display = 'none';
+    }
+    
+    // Handle form submission
+    document.getElementById('generate-course-form').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        console.log("Form submission started");
+        
+        // Show loading state
+        document.getElementById('generate-icon').style.display = 'none';
+        document.getElementById('generate-text').style.display = 'none';
+        document.getElementById('generate-loader').style.display = 'inline';
+        
+        const formData = {
+            name: document.getElementById('course-name').value,
+            description: document.getElementById('course-description').value,
+            noOfChapters: parseInt(document.getElementById('chapter-count').value),
+            includeVideo: document.getElementById('include-video').checked,
+            level: document.getElementById('difficulty-level').value,
+            category: document.getElementById('course-category').value
+        };
+        
+        console.log("Form data prepared:", formData);
+        
+        try {
+            console.log("Sending request to server");
+            
+            const response = await fetch('{% url "generate_course" %}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCSRFToken(),
+                },
+                body: JSON.stringify(formData)
+            });
+            
+            console.log("Response received, status:", response.status);
+            
+            const data = await response.json();
+            console.log("Response data:", data);
+            
+             if (data.success) {
+                console.log("Course generated successfully, redirecting...");
+                // Correct redirection for an AI-generated course
+                window.location.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.first_topic_id}`;
+            } else {
+                console.error("Error generating course:", data.error);
+                alert('Error generating course: ' + data.error);
+                // Reset button state
+                resetGenerateButton();
+            }
+        } catch (error) {
+            console.error("Error in form submission:", error);
+            alert('Error generating course: ' + error.message);
+            // Reset button state
+            resetGenerateButton();
+        }
+    });
+    
+    function resetGenerateButton() {
+        document.getElementById('generate-icon').style.display = 'inline';
+        document.getElementById('generate-text').style.display = 'inline';
+        document.getElementById('generate-loader').style.display = 'none';
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('generate-course-modal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeGenerateCourseModal();
+        }
+    });
+    
+    // Close modal when pressing Escape key
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeGenerateCourseModal();
+        }
+    });
+    
+    // Helper function to get CSRF token
+    function getCSRFToken() {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return cookieValue;
+    }
+</script>

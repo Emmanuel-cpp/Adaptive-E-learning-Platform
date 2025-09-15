@@ -1,5 +1,7 @@
 from django.db import models
 from django.utils import timezone
+from users.models import Student # Correct import for your Student model
+from django.conf import settings
 
 class Course(models.Model):
     title = models.CharField(max_length=200)
@@ -48,3 +50,141 @@ class Lesson(models.Model):
     
     def __str__(self):
         return self.title
+    
+    
+# content/models.py
+from django.db import models
+from django.contrib.auth import get_user_model
+
+User = get_user_model()
+
+class GeneratedCourse(models.Model):
+    DIFFICULTY_LEVELS = [
+        ('beginner', 'Beginner'),
+        ('moderate', 'Moderate'),
+        ('advanced', 'Advanced'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    title = models.CharField(max_length=200)
+    description = models.TextField()
+    category = models.CharField(max_length=100)
+    difficulty = models.CharField(max_length=10, choices=DIFFICULTY_LEVELS)
+    include_video = models.BooleanField(default=False)
+    chapters_count = models.IntegerField()
+    generated_content = models.JSONField()  # Stores the AI-generated content
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return self.title
+
+class GeneratedChapter(models.Model):
+    course = models.ForeignKey(GeneratedCourse, on_delete=models.CASCADE, related_name='chapters')
+    title = models.CharField(max_length=200)
+    duration = models.CharField(max_length=50)
+    image_prompt = models.TextField()
+    order = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['order']
+    
+    def __str__(self):
+        return self.title
+
+class GeneratedTopic(models.Model):
+    chapter = models.ForeignKey(GeneratedChapter, on_delete=models.CASCADE, related_name='topics')
+    title = models.CharField(max_length=200)
+    # This field will now be the full content
+    content = models.TextField(default='') 
+    description = models.TextField(blank=True) # New field for the brief description
+    order = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['order']
+    
+    def __str__(self):
+        return self.title   
+class GeneratedQuiz(models.Model):
+    """
+    Model to hold a quiz generated for a specific topic.
+    """
+    topic = models.OneToOneField(GeneratedTopic, on_delete=models.CASCADE, related_name='quiz')
+    
+    def __str__(self):
+        return f"Quiz for {self.topic.title}"
+
+class GeneratedQuestion(models.Model):
+    """
+    Model to hold a single question within a quiz.
+    """
+    quiz = models.ForeignKey(GeneratedQuiz, on_delete=models.CASCADE, related_name='questions')
+    question_text = models.TextField()
+    order = models.IntegerField(default=0)
+    
+    class Meta:
+        ordering = ['order']
+
+    def __str__(self):
+        return self.question_text[:50] + "..." if len(self.question_text) > 50 else self.question_text
+
+class GeneratedAnswer(models.Model):
+    """
+    Model to hold a single answer option for a question.
+    """
+    question = models.ForeignKey(GeneratedQuestion, on_delete=models.CASCADE, related_name='answers')
+    answer_text = models.CharField(max_length=255)
+    is_correct = models.BooleanField(default=False)
+    option_key = models.CharField(max_length=1, default='A')  # e.g., A, B, C, D
+
+    def __str__(self):
+        return f"{self.option_key}: {self.answer_text}"   
+
+# New model to track generated course progress
+class GeneratedCourseProgress(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='generated_course_progresses')
+    course = models.ForeignKey(GeneratedCourse, on_delete=models.CASCADE, related_name='progresses')
+    last_accessed_topic = models.ForeignKey('GeneratedTopic', on_delete=models.SET_NULL, null=True, related_name='+', help_text="The last topic the user viewed.")
+    last_accessed_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Progress for {self.student.username} on {self.course.title}"
+
+# New model to track completed topics
+class CompletedTopic(models.Model):
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='completed_topics')
+    topic = models.ForeignKey('GeneratedTopic', on_delete=models.CASCADE, related_name='completed_by')
+    completed_at = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.student.username} completed {self.topic.title}"   
+    
+class GeneratedCourseProgress(models.Model):
+    """
+    Tracks the last accessed topic for a generated course.
+    """
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='generated_course_progresses')
+    course = models.ForeignKey(GeneratedCourse, on_delete=models.CASCADE, related_name='progresses')
+    last_accessed_topic = models.ForeignKey(GeneratedTopic, on_delete=models.SET_NULL, null=True, blank=True)
+    last_accessed_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = "Generated Course Progresses"
+        unique_together = ('student', 'course')
+    
+    def __str__(self):
+        return f"{self.student.username}'s progress on {self.course.title}"
+
+class GeneratedTopicCompletion(models.Model):
+    """
+    Tracks which topics have been marked as complete by a student.
+    """
+    student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    topic = models.ForeignKey(GeneratedTopic, on_delete=models.CASCADE)
+    completed_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('student', 'topic')
+        
+    def __str__(self):
+        return f"{self.student.username} completed {self.topic.title}"      
+    

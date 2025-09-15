@@ -1,6 +1,6 @@
 from django.contrib import admin
-from .models import Course, Module, Lesson
-
+from .models import Course, Module, Lesson, GeneratedChapter, GeneratedCourse, GeneratedTopic
+from .models import GeneratedQuiz, GeneratedQuestion, GeneratedAnswer, GeneratedCourseProgress, CompletedTopic
 class LessonInline(admin.StackedInline):
     model = Lesson
     extra = 1
@@ -31,3 +31,15 @@ class LessonAdmin(admin.ModelAdmin):
     list_filter = ('module__course', 'content_type', 'difficulty')
     search_fields = ('title', 'content')
     ordering = ('module__course', 'module__order', 'order')
+
+
+admin.site.register(GeneratedChapter)
+admin.site.register(GeneratedCourse)
+admin.site.register(GeneratedTopic)
+
+admin.site.register(GeneratedQuiz)
+admin.site.register(GeneratedQuestion)
+admin.site.register(GeneratedAnswer)
+
+admin.site.register(GeneratedCourseProgress)
+admin.register(CompletedTopic)

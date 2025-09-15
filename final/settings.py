@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'engine',
     'adminPanel',
     'django_extensions',
+    'markdown_deux'
 ]
 
 MIDDLEWARE = [
@@ -107,3 +108,10 @@ CSRF_COOKIE_SECURE = False  # Set to True in production with HTTPS
 # Cache control headers
 SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
+# settings.py
+import os
+from dotenv import load_dotenv
+
+load_dotenv()  # Load environment variables from .env
+
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")

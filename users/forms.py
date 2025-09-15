@@ -43,7 +43,7 @@ class RegistrationForm(UserCreationForm):
     
     def save(self, commit=True):
         user = super().save(commit=False)
-        user.student_id = self.cleaned_data['id']
+        user.student_id = self.cleaned_data['student_id']
         user.email = self.cleaned_data['email']
         user.first_name = self.cleaned_data['first_name']
         user.last_name = self.cleaned_data['last_name']

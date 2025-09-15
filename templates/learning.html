@@ -1,3 +1,4 @@
+{% load markdown_deux_tags %}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +7,7 @@
     <title>CBU Learn | C++ Programming Fundamentals</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
         :root {
             --primary: #0d47a1;
@@ -1004,7 +1006,7 @@
     </style>
 </head>
 <body>
-    <!-- Header -->
+   <!-- Header -->
     <header>
         <div class="container">
             <nav>
@@ -1021,10 +1023,10 @@
                 </div>
                 
                 <div class="nav-buttons">
-                    <a href="{%url 'dashboard'%}" class="nav-btn login-btn">
+                    <a href="{% url 'dashboard' %}" class="nav-btn login-btn">
                         <i class="fas fa-user"></i> Me
                     </a>
-                    <a href="{%url 'logout' %}" class="nav-btn register-btn">
+                    <a href="{% url 'logout' %}" class="nav-btn register-btn">
                         <i class="fas fa-sign-out-alt"></i> Logout
                     </a>
                 </div>
@@ -1033,96 +1035,148 @@
     </header>
 
     <!-- Learning Layout -->
-   <div class="learning-container">
-<div id="sidebar-overlay" class="sidebar-overlay"></div>
+    <div class="learning-container">
+        <div id="sidebar-overlay" class="sidebar-overlay"></div>
 
-<aside class="sidebar" id="sidebar">
-    <div class="sidebar-header">
-        <h2 class="course-title">{{ course.title }}</h2>
-        <div class="progress-bar">
-            <div class="progress-fill" style="width: {{ progress_percentage }}%"></div>
-        </div>
-        <div class="progress-text">{{ progress_percentage }}% Complete</div>
-    </div>
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="course-title">{{ course.title }}</h2>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: {{ progress_percentage }}%"></div>
+                </div>
+                <div class="progress-text">{{ progress_percentage }}% Complete</div>
+            </div>
 
-        <ul class="module-list">
-        {% for mod in course.modules.all %}
-        <li class="module-item {% if mod == module %}active{% endif %}">
-            {% if mod.lessons.first %}
-                <a href="{% url 'learning' lesson_id=mod.lessons.first.id %}" class="module-link">
-                    <div class="module-icon">
-                        <i class="fas fa-play"></i>
-                    </div>
-                    <span class="module-title">{{ mod.title }}</span>
-                    <div class="module-status">
-                        {% if mod in completed_modules %}✓{% endif %}
-                    </div>
-                </a>
-            {% else %}
-                <span class="module-link disabled" style="opacity:0.6; cursor:not-allowed;">
-                    <div class="module-icon">
-                        <i class="fas fa-ban"></i>
-                    </div>
-                    <span class="module-title">{{ mod.title }} (No lessons)</span>
-                </span>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
+            <ul class="module-list">
+                {% if is_generated %}
+                    {% for chapter in course.chapters.all %}
+                        <li class="module-item {% if chapter == module %}active{% endif %}">
+                            {% if chapter.topics.first %}
+                                <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ chapter.topics.first.id }}" class="module-link">
+                                    <div class="module-icon">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <span class="module-title">{{ chapter.title }}</span>
+                                </a>
+                            {% else %}
+                                <span class="module-link disabled" style="opacity:0.6; cursor:not-allowed;">
+                                    <div class="module-icon">
+                                        <i class="fas fa-ban"></i>
+                                    </div>
+                                    <span class="module-title">{{ chapter.title }} (No topics)</span>
+                                </span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                {% else %}
+                    {% for mod in course.modules.all %}
+                        <li class="module-item {% if mod == module %}active{% endif %}">
+                            {% if mod.lessons.first %}
+                                <a href="{% url 'learning' lesson_id=mod.lessons.first.id %}" class="module-link">
+                                    <div class="module-icon">
+                                        <i class="fas fa-play"></i>
+                                    </div>
+                                    <span class="module-title">{{ mod.title }}</span>
+                                    <div class="module-status">
+                                        {% if mod in completed_modules %}✓{% endif %}
+                                    </div>
+                                </a>
+                            {% else %}
+                                <span class="module-link disabled" style="opacity:0.6; cursor:not-allowed;">
+                                    <div class="module-icon">
+                                        <i class="fas fa-ban"></i>
+                                    </div>
+                                    <span class="module-title">{{ mod.title }} (No lessons)</span>
+                                </span>
+                            {% endif %}
+                        </li>
+                    {% endfor %}
+                {% endif %}
+            </ul>
+        </aside>
 
-</aside>
+        <!-- Main Content -->
+        <main class="content-area">
+           
 
-    <!-- Main Content -->
-    <main class="content-area">
-        <div class="content-header">
-            <h1 class="page-title">{{ lesson.title }}</h1>
-        </div>
-        
-        <div class="lesson-content">
-            <!-- Dynamic content from database -->
-            {{ lesson.content|safe }}
-        </div>
-        
-        <!--Saving Content Button-->
-       <div class="completion-section" style="margin: 40px 0; text-align: center;">
-            {% if next_lesson %}
-                <form method="post" action="{% url 'complete_lesson' lesson_id=next_lesson.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="nav-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
-                        <i class="fas fa-check-circle"></i> Mark Lesson as Completed
-                    </button>
-                </form>
-            {% else %}
-                <form method="post" action="{% url 'complete_lesson' lesson_id=lesson.id %}">
-                    {% csrf_token %}
-                    <button type="submit" class="nav-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
-                        <i class="fas fa-check-circle"></i> Complete Course
-                    </button>
-                </form>
-                <div class="congratulations-message" style="margin-top: 20px;">
-                    <h3>Congratulations {{ student.first_name }} {{ student.last_name }}! 🎉</h3>
-                    <p>You've completed all lessons in this course!</p>
+<div class="lesson-content">
+    <h2>{{ lesson.title }}</h2>
+   {% if is_generated %}
+    <div class="generated-content">{{ lesson.content|markdown }}</div>
+            {% if is_generated and lesson.quiz %}
+                <div id="quiz-section" class="quiz-container mb-4 p-4 rounded shadow-sm">
+                    <h3 class="text-primary-dark font-montserrat font-bold">Quiz</h3>
+                    <form id="quiz-form" data-topic-id="{{ lesson.id }}">
+                        {% csrf_token %}
+                        {% for question in quiz_questions %}
+                            <div class="quiz-question mb-3" data-question-id="{{ question.id }}">
+                                <p class="font-poppins font-medium">{{ forloop.counter }}. {{ question.question_text }}</p>
+                                <div class="options mt-2">
+                                    {% for answer in question.answers.all %}
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="question-{{ question.id }}" id="answer-{{ answer.id }}" value="{{ answer.option_key }}">
+                                            <label class="form-check-label" for="answer-{{ answer.id }}">
+                                                {{ answer.answer_text }}
+                                            </label>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            </div>
+                        {% endfor %}
+                        <button type="submit" class="btn btn-primary mt-3">Submit Quiz</button>
+                    </form>
                 </div>
             {% endif %}
-        </div>
-        
-        <div class="content-footer">
-           <!--- {% if previous_lesson %} -->
+
+{% else %}
+    {{ lesson.content|safe }}
+{% endif %}
+</div>
+            <div class="content-footer">
+    {% if previous_lesson %}
+        {% if is_generated %}
+            <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ previous_lesson.id }}" class="nav-btn outline">
+                <i class="fas fa-arrow-left"></i> Previous: {{ previous_lesson.title }}
+            </a>
+        {% else %}
             <a href="{% url 'learning' lesson_id=previous_lesson.id %}" class="nav-btn outline">
                 <i class="fas fa-arrow-left"></i> Previous: {{ previous_lesson.title }}
             </a>
-            <!---{% endif %} -->
-            
-            <!---{% if next_lesson %}-->
+        {% endif %}
+    {% endif %}
+
+    {% if next_lesson %}
+        {% if is_generated %}
+            <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ next_lesson.id }}" class="nav-btn">
+                Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
+            </a>
+        {% else %}
             <a href="{% url 'learning' lesson_id=next_lesson.id %}" class="nav-btn">
                 Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
             </a>
-            <!---{% endif %}-->
-        </div>
-    </main>
+        {% endif %}
+    {% endif %}
 </div>
 
-
+           <div class="completion-section" style="margin: 40px 0; text-align: center;">
+    {% if is_generated %}
+        <form method="post" action="{% url 'complete_generated_topic' topic_id=lesson.id %}" onsubmit="return validateQuiz(event);">
+            {% csrf_token %}
+            <button type="submit" class="nav-btn complete-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
+                <i class="fas fa-check-circle"></i> Mark Topic as Completed
+            </button>
+        </form>
+    {% else %}
+        <form method="post" action="{% url 'complete_lesson' lesson_id=lesson.id %}">
+            {% csrf_token %}
+            <button type="submit" class="nav-btn complete-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
+                <i class="fas fa-check-circle"></i> Mark Lesson as Completed
+            </button>
+        </form>
+    {% endif %}
+</div>
+        </main>
+    </div>
 
     <!-- Footer -->
     <footer>
@@ -1135,226 +1189,8 @@
     </footer>
 
     <script>
-
 // Quiz functionality with try-again feature
-let quizAttempts = 0;
 
-function initQuiz() {
-  // Quiz elements
-  const quizOptions = document.querySelectorAll('.quiz-option');
-  const quizButton = document.querySelector('.quiz-button');
-  const quizFeedback = document.getElementById('quiz-feedback');
-  
-  // Check if quiz elements exist
-  if (!quizOptions.length || !quizButton || !quizFeedback) {
-    return;
-  }
-  
-  // Add event listeners to quiz options
-  quizOptions.forEach(option => {
-    option.addEventListener('click', function() {
-      // Find all options in the same question group
-      const questionGroup = this.closest('.quiz-options');
-      const optionsInGroup = questionGroup.querySelectorAll('.quiz-option');
-      
-      // Remove selected class from all options in this group
-      optionsInGroup.forEach(opt => {
-        opt.classList.remove('selected');
-      });
-      
-      // Add selected class to clicked option
-      this.classList.add('selected');
-      
-      // Reset styling if user changes answer
-      this.classList.remove('correct', 'incorrect');
-    });
-  });
-  
-  // Add event listener to quiz button
-  quizButton.addEventListener('click', function() {
-    // Clear any previous feedback
-    quizFeedback.innerHTML = '';
-    quizFeedback.style.display = 'none';
-    
-    // Get all quiz questions
-    const questions = document.querySelectorAll('.quiz-question');
-    let answeredAll = true;
-    
-    // Process each question
-    questions.forEach(question => {
-      // Reset question styling
-      question.style.color = '';
-      question.style.fontWeight = '';
-      
-      // Find the options container for this question
-      const optionsContainer = question.nextElementSibling;
-      
-      // Check if it's a quiz-options container
-      if (!optionsContainer || !optionsContainer.classList.contains('quiz-options')) {
-        return;
-      }
-      
-      // Get all options for this question
-      const options = optionsContainer.querySelectorAll('.quiz-option');
-      let questionAnswered = false;
-      
-      // Check each option
-      options.forEach(option => {
-        if (option.classList.contains('selected')) {
-          questionAnswered = true;
-        }
-      });
-      
-      // If question not answered, mark it
-      if (!questionAnswered) {
-        answeredAll = false;
-        question.style.color = "#ef4444";
-        question.style.fontWeight = "bold";
-      }
-    });
-    
-    // If not all answered, show error
-    if (!answeredAll) {
-      quizAttempts++;
-      
-      let feedbackHTML = `
-        <i class='fas fa-exclamation-triangle'></i> 
-        Please answer all questions before submitting!
-      `;
-      
-      // Add hint on second attempt
-      if (quizAttempts > 1) {
-        feedbackHTML += `<div class="hint">You have ${questions.length - document.querySelectorAll('.quiz-option.selected').length} unanswered questions</div>`;
-      }
-      
-      quizFeedback.innerHTML = feedbackHTML;
-      quizFeedback.className = "quiz-feedback quiz-incorrect";
-      quizFeedback.style.display = "block";
-      
-      // Scroll to feedback
-      quizFeedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      return;
-    }
-    
-    // If all answered, calculate results
-    let correctCount = 0;
-    
-    // Process each question for scoring
-    questions.forEach(question => {
-      // Find the options container for this question
-      const optionsContainer = question.nextElementSibling;
-      
-      // Get all options for this question
-      const options = optionsContainer.querySelectorAll('.quiz-option');
-      
-      // Check each option
-      options.forEach(option => {
-        const isSelected = option.classList.contains('selected');
-        const isCorrect = option.getAttribute('data-correct') === 'true';
-        
-        if (isSelected) {
-          // Mark as correct/incorrect
-          if (isCorrect) {
-            option.classList.add('correct');
-            correctCount++;
-          } else {
-            option.classList.add('incorrect');
-          }
-        }
-        
-        // Also mark correct answer if not selected
-        if (isCorrect && !isSelected) {
-          option.classList.add('correct');
-        }
-      });
-    });
-    
-    // Generate feedback
-    let feedbackHTML = "";
-    const totalQuestions = questions.length;
-    const percentage = Math.round((correctCount / totalQuestions) * 100);
-    
-    if (percentage === 100) {
-      feedbackHTML = `<i class="fas fa-medal"></i> Perfect! You scored ${percentage}% (${correctCount}/${totalQuestions} correct)`;
-      quizFeedback.className = "quiz-feedback quiz-correct";
-    } else if (percentage >= 70) {
-      feedbackHTML = `<i class="fas fa-check-circle"></i> Well done! You scored ${percentage}% (${correctCount}/${totalQuestions} correct)`;
-      quizFeedback.className = "quiz-feedback quiz-correct";
-    } else {
-      feedbackHTML = `<i class="fas fa-redo"></i> Keep practicing! You scored ${percentage}% (${correctCount}/${totalQuestions} correct)`;
-      quizFeedback.className = "quiz-feedback quiz-incorrect";
-      
-      // Add try again button
-      feedbackHTML += `
-        <button id="try-again-button" class="try-again-btn">
-          <i class="fas fa-sync-alt"></i> Try Again
-        </button>
-      `;
-    }
-    
-    quizFeedback.innerHTML = feedbackHTML;
-    quizFeedback.style.display = "block";
-    
-    // Add event listener to try again button if it exists
-    const tryAgainButton = document.getElementById('try-again-button');
-    if (tryAgainButton) {
-      tryAgainButton.addEventListener('click', resetQuiz);
-    }
-    
-    // Scroll to feedback
-    quizFeedback.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  });
-}
-
-function resetQuiz() {
-  // Reset quiz state
-  quizAttempts = 0;
-  
-  // Clear feedback
-  const quizFeedback = document.getElementById('quiz-feedback');
-  if (quizFeedback) {
-    quizFeedback.style.display = 'none';
-  }
-  
-  // Clear all selections
-  document.querySelectorAll('.quiz-option').forEach(option => {
-    option.classList.remove('selected', 'correct', 'incorrect');
-  });
-  
-  // Reset question styles
-  document.querySelectorAll('.quiz-question').forEach(question => {
-    question.style.color = '';
-    question.style.fontWeight = '';
-  });
-}
-
-// Initialize the quiz when the page loads
-document.addEventListener('DOMContentLoaded', function() {
-  // Initialize quiz functionality
-  initQuiz();
-  
-  // Reinitialize quiz when content changes
-  const lessonContent = document.querySelector('.lesson-content');
-  
-  if (lessonContent) {
-    const observer = new MutationObserver(function(mutations) {
-      // Check if any nodes were added
-      const contentChanged = mutations.some(mutation => 
-        mutation.addedNodes.length > 0
-      );
-      
-      if (contentChanged) {
-        quizAttempts = 0;
-        initQuiz();
-      }
-    });
-    
-    observer.observe(lessonContent, {
-      childList: true,
-      subtree: true
-    });
-  }
-});
  // Mobile sidebar toggle functionality
         document.addEventListener('DOMContentLoaded', function() {
             const mobileToggle = document.getElementById('mobile-toggle');
@@ -1389,6 +1225,90 @@ document.addEventListener('DOMContentLoaded', function() {
                 });
             }
         });
-    </script>
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const quizForm = document.getElementById('quiz-form');
+        if (quizForm) {
+            quizForm.addEventListener('submit', function(event) {
+                validateQuiz(event);
+            });
+        }
+    });
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.startsWith(name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    async function validateQuiz(event) {
+        event.preventDefault();
+
+        const questions = document.querySelectorAll('.quiz-question');
+        const userAnswers = {};
+        const topicId = document.getElementById('quiz-form').dataset.topicId;
+        let unanswered = false;
+
+        questions.forEach(questionDiv => {
+            const questionId = questionDiv.dataset.questionId;
+            const selectedOption = questionDiv.querySelector('input:checked');
+            
+            if (selectedOption) {
+                userAnswers[questionId] = selectedOption.value;
+            } else {
+                unanswered = true;
+            }
+        });
+
+        if (unanswered) {
+            alert('Please answer all questions before submitting.');
+            return;
+        }
+
+        try {
+            // CORRECTED URL: Added leading '/' to make it an absolute path
+            const response = await fetch(`/api/complete-generated-topic/${topicId}/`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': getCookie('csrftoken'),
+                },
+                body: JSON.stringify({
+                    topic_id: topicId,
+                    answers: userAnswers
+                })
+            });
+            
+            const data = await response.json();
+
+            if (data.success) {
+                alert(data.ai_feedback);
+                
+                if (data.next_topic_id) {
+                    window.location.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.next_topic_id}`;
+                } else {
+                    alert('Congratulations, you have completed the course!');
+                    window.location.href = '/dashboard';
+                }
+            } else {
+                alert('Error submitting quiz: ' + data.error);
+            }
+        } catch (error) {
+            alert('An error occurred. Please try again.');
+            console.error('Error:', error);
+        }
+    }
+
+</script>
+
 </body>
 </html>
