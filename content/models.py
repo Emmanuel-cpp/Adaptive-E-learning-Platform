@@ -91,19 +91,31 @@ class GeneratedChapter(models.Model):
     def __str__(self):
         return self.title
 
+# In your models.py
 class GeneratedTopic(models.Model):
+    DIFFICULTY_LEVELS = [
+        ('basic', 'Basic'),
+        ('intermediate', 'Intermediate'),
+        ('advanced', 'Advanced'),
+    ]
+    
     chapter = models.ForeignKey(GeneratedChapter, on_delete=models.CASCADE, related_name='topics')
     title = models.CharField(max_length=200)
-    # This field will now be the full content
-    content = models.TextField(default='') 
-    description = models.TextField(blank=True) # New field for the brief description
+    content = models.TextField(default='')
+    alternative_content = models.TextField(blank=True, null=True)  # For simplified content
+    difficulty = models.CharField(max_length=20, choices=DIFFICULTY_LEVELS, default='intermediate')
+    description = models.TextField(blank=True)
     order = models.IntegerField(default=0)
+    is_regenerated = models.BooleanField(default=False)
+    original_topic = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='regenerated_versions')
     
     class Meta:
         ordering = ['order']
     
     def __str__(self):
-        return self.title   
+        return self.title
+    
+    
 class GeneratedQuiz(models.Model):
     """
     Model to hold a quiz generated for a specific topic.
@@ -135,10 +147,11 @@ class GeneratedAnswer(models.Model):
     answer_text = models.CharField(max_length=255)
     is_correct = models.BooleanField(default=False)
     option_key = models.CharField(max_length=1, default='A')  # e.g., A, B, C, D
+    order = models.IntegerField(default=0)  
 
     def __str__(self):
         return f"{self.option_key}: {self.answer_text}"   
-
+"""
 # New model to track generated course progress
 class GeneratedCourseProgress(models.Model):
     student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='generated_course_progresses')
@@ -148,6 +161,7 @@ class GeneratedCourseProgress(models.Model):
 
     def __str__(self):
         return f"Progress for {self.student.username} on {self.course.title}"
+"""        
 
 # New model to track completed topics
 class CompletedTopic(models.Model):
@@ -181,6 +195,8 @@ class GeneratedTopicCompletion(models.Model):
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     topic = models.ForeignKey(GeneratedTopic, on_delete=models.CASCADE)
     completed_at = models.DateTimeField(auto_now_add=True)
+    score = models.FloatField(null=True, blank=True) 
+    passed = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('student', 'topic')
@@ -188,3 +204,31 @@ class GeneratedTopicCompletion(models.Model):
     def __str__(self):
         return f"{self.student.username} completed {self.topic.title}"      
     
+    
+class CppLearningResource(models.Model):
+    RESOURCE_TYPES = [
+        ('video', 'Video'),
+        ('article', 'Article'),
+        ('tutorial', 'Interactive Tutorial'),
+        ('exercise', 'Practice Exercises'),
+        ('documentation', 'Official Documentation'),
+    ]
+    
+    TOPIC_CATEGORIES = [
+        ('syntax', 'Syntax Basics'),
+        ('oop', 'Object-Oriented Programming'),
+        ('stl', 'STL & Templates'),
+        ('memory', 'Memory Management'),
+        ('advanced', 'Advanced Concepts'),
+    ]
+    
+    title = models.CharField(max_length=200)
+    url = models.URLField()
+    resource_type = models.CharField(max_length=20, choices=RESOURCE_TYPES)
+    topic_category = models.CharField(max_length=20, choices=TOPIC_CATEGORIES)
+    difficulty = models.CharField(max_length=20, choices=GeneratedTopic.DIFFICULTY_LEVELS)
+    description = models.TextField()
+    source = models.CharField(max_length=100)  # e.g., 'freeCodeCamp', 'W3Schools'
+    
+    def __str__(self):
+        return f"{self.title} ({self.source})"    

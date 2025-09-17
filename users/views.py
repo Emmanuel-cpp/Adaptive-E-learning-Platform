@@ -217,3 +217,24 @@ def logout_view(request):
 @login_required
 def temp_dashboard(request):
     return render(request, 'dashboard.html')    
+
+
+from django.http import JsonResponse
+import google.generativeai as genai
+@login_required
+def test_gemini_api(request):
+    """Test view to check if Gemini API is working"""
+    try:
+        genai.configure(api_key=settings.GEMINI_API_KEY)
+        model = genai.GenerativeModel('gemini-pro')
+        response = model.generate_content("Hello, are you working?")
+        
+        return JsonResponse({
+            'success': True,
+            'response': response.text
+        })
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })

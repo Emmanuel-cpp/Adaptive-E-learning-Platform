@@ -6,6 +6,7 @@
     <title>CBU Learn - Admin Dashboard</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --primary: #0d47a1;
@@ -387,6 +388,24 @@
             background: var(--dark);
         }
         
+        .btn-danger {
+            background: var(--danger);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #d32f2f;
+        }
+        
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #388e3c;
+        }
+        
         /* Module List */
         .module-list {
             list-style: none;
@@ -435,7 +454,7 @@
             position: absolute;
             left: 12px;
             top: 50%;
-            transform: translateY(-50%);
+            transform: translateY(-50%;
             color: var(--gray);
         }
         
@@ -505,6 +524,7 @@
             border-radius: 12px;
             padding: 20px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+            margin-bottom: 30px;
         }
         
         .chart-placeholder {
@@ -515,6 +535,130 @@
             background: #f9f9f9;
             border-radius: 8px;
             color: var(--gray);
+        }
+        
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--light-gray);
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+            transition: var(--transition);
+        }
+        
+        .tab.active {
+            border-bottom-color: var(--primary);
+            color: var(--primary);
+            font-weight: 600;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .modal-content {
+            background: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.3rem;
+            color: var(--dark);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--gray);
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .modal-footer {
+            padding: 20px;
+            border-top: 1px solid var(--light-gray);
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--gray);
+        }
+        
+        .form-control {
+            width: 100%;
+            padding: 10px 15px;
+            border: 1px solid var(--light-gray);
+            border-radius: 6px;
+            font-family: 'Poppins', sans-serif;
+            transition: var(--transition);
+        }
+        
+        .form-control:focus {
+            outline: none;
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(0, 137, 123, 0.2);
+        }
+        
+        /* Action buttons */
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .btn-sm {
+            padding: 6px 12px;
+            font-size: 0.85rem;
         }
         
         /* Footer */
@@ -582,6 +726,11 @@
                 display: block;
                 overflow-x: auto;
             }
+            
+            .tabs {
+                overflow-x: auto;
+                white-space: nowrap;
+            }
         }
         
         @media (max-width: 480px) {
@@ -596,320 +745,816 @@
             .stat-number {
                 font-size: 1.7rem;
             }
+            
+            .action-buttons {
+                flex-direction: column;
+            }
         }
+        #studentPagination button {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+#studentPagination button:hover:not(:disabled) {
+    background-color: #e9e9e9;
+}
+
+#studentPagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#studentPagination button:not(:disabled):hover {
+    background-color: #2563eb;
+    color: white;
+}
+
+        
+        
     </style>
-</head>
 <body>
     <!-- Header -->
     <header>
-    <div class="container">
-        <nav>
-            <div class="logo-container">
-                <button class="menu-toggle" id="mobile-toggle">
-                    <i class="fas fa-bars"></i>
-                </button>
-                <a href="#" class="logo">
-                    <div class="logo-icon">
-                        <i class="fas fa-graduation-cap"></i>
-                    </div>
-                    <span class="logo-text">CBU Learn</span>
-                </a>
-            </div>
+        <div class="container">
+            <nav>
+                <div class="logo-container">
+                    <button class="menu-toggle" id="mobile-toggle">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                    <a href="#" class="logo">
+                        <div class="logo-icon">
+                            <i class="fas fa-graduation-cap"></i>
+                        </div>
+                        <span class="logo-text">CBU Learn</span>
+                    </a>
+                </div>
 
-            <div class="user-menu">
-                <div class="user-avatar">{{ user.first_name|first }}{{ user.last_name|first }}</div>
-                <a href="{% url 'logout' %}" class="logout-button">
-                    <i class="fas fa-sign-out-alt"></i>
-                    <span class="logout-text">Logout</span>
-                </a>
-            </div>
-        </nav>
-    </div>
-</header>
-
-<!-- Admin Layout -->
-<div class="admin-container">
-    <!-- Sidebar Overlay for Mobile -->
-    <div id="sidebar-overlay" class="sidebar-overlay"></div>
-
-    <!-- Sidebar -->
-    <aside class="admin-sidebar" id="sidebar">
-        <div class="sidebar-header">
-            <h2 class="sidebar-title">Admin Panel</h2>
+                <div class="user-menu">
+                    <div class="user-avatar">{{ user.first_name|first }}{{ user.last_name|first }}</div>
+                    <a href="{% url 'logout' %}" class="logout-button">
+                        <i class="fas fa-sign-out-alt"></i>
+                        <span class="logout-text">Logout</span>
+                    </a>
+                </div>
+            </nav>
         </div>
-        
-        <ul class="sidebar-menu">
-            <li class="menu-item">
-                <a href="{% url 'admin_dashboard' %}" class="menu-link active">
-                    <span class="menu-icon"><i class="fas fa-tachometer-alt"></i></span>
-                    <span>Dashboard</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-users"></i></span>
-                    <span>User Management</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-book"></i></span>
-                    <span>C++ Course</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-tasks"></i></span>
-                    <span>Assessments</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="{% url 'progress_dashboard' %}" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-chart-line"></i></span>
-                    <span>Progress Tracking</span>
-                </a>
-            </li>
-            <li class="menu-item">
-                <a href="#" class="menu-link">
-                    <span class="menu-icon"><i class="fas fa-cog"></i></span>
-                    <span>Settings</span>
-                </a>
-            </li>
-        </ul>
-    </aside>
+    </header>
 
-    <!-- Main Content -->
-    <main class="admin-main">
-        <div class="welcome-banner">
-            <h1 class="welcome-title">Admin Dashboard</h1>
-            <p class="welcome-subtitle">Manage C++ course content and track student progress</p>
-        </div>
-        
-        <!-- Stats Overview -->
-        <div class="dashboard-grid">
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h2 class="card-title">Total Students</h2>
-                    <div class="card-icon">
-                        <i class="fas fa-users"></i>
-                    </div>
-                </div>
-                <div class="stat-number">{{ total_students }}</div>
-                <div class="stat-label">Enrolled in C++ Course</div>
-                <div class="stat-trend trend-up">
-                    <i class="fas fa-arrow-up"></i>
-                    <span>{{ new_students_this_week }} new this week</span>
-                </div>
+    <!-- Admin Layout -->
+    <div class="admin-container">
+        <!-- Sidebar -->
+        <aside class="admin-sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h2 class="sidebar-title">Admin Panel</h2>
             </div>
             
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h2 class="card-title">Course Progress</h2>
-                    <div class="card-icon">
-                        <i class="fas fa-chart-line"></i>
-                    </div>
-                </div>
-                <div class="progress-container">
-                    <div class="progress-header">
-                        <span class="progress-label">Average Completion</span>
-                        <span class="progress-percent">{{ avg_progress }}%</span>
-                    </div>
-                    <div class="progress-bar">
-                        <div class="progress-fill" style="width: {{ avg_progress }}%"></div>
-                    </div>
-                </div>
-                <div class="stat-trend {% if progress_change >= 0 %}trend-up{% else %}trend-down{% endif %}">
-                    <i class="fas fa-arrow-{% if progress_change >= 0 %}up{% else %}down{% endif %}"></i>
-                    <span>{{ progress_change }}% from last week</span>
-                </div>
-            </div>
-            
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h2 class="card-title">Active Now</h2>
-                    <div class="card-icon">
-                        <i class="fas fa-user-check"></i>
-                    </div>
-                </div>
-                <div class="stat-number">{{ active_now }}</div>
-                <div class="stat-label">Currently Learning</div>
-                <div class="stat-trend {% if active_change >= 0 %}trend-up{% else %}trend-down{% endif %}">
-                    <i class="fas fa-arrow-{% if active_change >= 0 %}up{% else %}down{% endif %}"></i>
-                    <span>{{ active_change }} from yesterday</span>
-                </div>
-            </div>
-            
-            <div class="dashboard-card">
-                <div class="card-header">
-                    <h2 class="card-title">Modules</h2>
-                    <div class="card-icon">
-                        <i class="fas fa-book-open"></i>
-                    </div>
-                </div>
-                <div class="stat-number">{{ modules.count }}</div>
-                <div class="stat-label">C++ Learning Modules</div>
-                <div class="stat-trend">
-                    <i class="fas fa-plus-circle"></i>
-                    <span>2 new modules in development</span>
-                </div>
-            </div>
-        </div>
-        
-        <!-- C++ Course Modules -->
-        <div class="table-container">
-            <div class="table-header">
-                <h2 class="table-title">C++ Course Modules</h2>
-                <button class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Add Module
-                </button>
-            </div>
-            
-            <ul class="module-list">
-                {% for module in modules %}
-                <li class="module-item">
-                    <div>
-                        <div class="module-title">{{ forloop.counter }}. {{ module.title }}</div>
-                        <div class="module-meta">{{ module.lesson_count }} lessons • {{ module.total_duration|default:0 }} minutes</div>
-                    </div>
-                    <div class="module-status status-completed">
-                        <i class="fas fa-check-circle"></i> Published
-                    </div>
+            <ul class="sidebar-menu">
+                
+                <li class="menu-item">
+                    <a href="#user-management" class="menu-link" data-tab="user-management">
+                        <span class="menu-icon"><i class="fas fa-users"></i></span>
+                        <span>User Management</span>
+                    </a>
                 </li>
-                {% endfor %}
+                <li class="menu-item">
+                    <a href="#analytics" class="menu-link" data-tab="analytics">
+                        <span class="menu-icon"><i class="fas fa-chart-bar"></i></span>
+                        <span>Top Performers</span>
+                    </a>
+                </li>
             </ul>
-        </div>
-        
-        <!-- Student Progress -->
-        <div class="table-container">
-            <div class="table-header">
-                <h2 class="table-title">Student Progress Overview</h2>
-                <div class="search-box">
-                    <i class="fas fa-search"></i>
-                    <input type="text" class="search-input" placeholder="Search students...">
+        </aside>
+
+        <!-- Main Content -->
+        <main class="admin-main">
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard" class="tab-content active">
+                <div class="welcome-banner">
+                    <h1 class="welcome-title">Admin Dashboard</h1>
+                    <p class="welcome-subtitle">Manage C++ course content and track student progress</p>
+                </div>
+                
+                <!-- Stats Overview -->
+                <div class="dashboard-grid">
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Total Students</h2>
+                            <div class="card-icon"><i class="fas fa-users"></i></div>
+                        </div>
+                        <div class="stat-number">{{ total_students }}</div>
+                        <div class="stat-label">Enrolled in C++ Course</div>
+                    </div>
+                    
+                   <div class="dashboard-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Average Progress</h2>
+                            <div class="card-icon"><i class="fas fa-chart-line"></i></div>
+                        </div>
+                        <div class="progress-container">
+                            <div class="progress-header">
+                                <span class="progress-label">Overall Completion</span>
+                                <span class="progress-percent">{{ avg_progress }}%</span>
+                            </div>
+                            <div class="progress-bar">
+                                <div class="progress-fill" style="width: {{ avg_progress }}%"></div>
+                            </div>
+                        </div>
+                        <div class="stat-label">{{ total_completed }} of {{ total_learning_items }} items completed</div>
+                    </div>
+                    
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Topics</h2>
+                            <div class="card-icon"><i class="fas fa-robot"></i></div>
+                        </div>
+                        <div class="stat-number">{{ ai_courses_count }}</div>
+                        <div class="stat-label">Generated Topics</div>
+                    </div>
                 </div>
             </div>
+
+            <!-- User Management Tab -->
+            <div id="user-management" class="tab-content">
+                <div class="welcome-banner">
+                    <h1 class="welcome-title">User Management</h1>
+                    <p class="welcome-subtitle">Overview of all students</p>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2 class="table-title">All Students</h2>
+                        
+                    </div>
+                    
+                <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left;">
+                    <thead>
+                        <tr style="background: #2563eb; color: white;">
+                            <th style="padding: 12px; border: 1px solid #ddd;">Student ID</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Student Name</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Progress</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Last Active</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in student_progress %}
+                        <tr style="background: {% cycle '#f9fafb' 'white' %}; cursor: pointer;" 
+                            onmouseover="this.style.background='#e5e7eb'" 
+                            onmouseout="this.style.background='{% cycle '#f9fafb' 'white' %}'">
+                            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.student_id }}</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.first_name }} {{ student.last_name }}</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">
+                                <div style="background:#e5e7eb; border-radius: 6px; height: 10px; width:100%;">
+                                    <div style="background:#2563eb; height:100%; width: {{ student.progress_percentage|default:0 }}%; border-radius: 6px;"></div>
+                                </div>
+                                <small>{{ student.progress_percentage|default:0 }}% complete</small>
+                            </td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">
+                                {% if student.last_active %}
+                                    {{ student.last_active|timesince }} ago
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No student data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                </div>
+                
+            </div>
             
-            <table>
-                <thead>
-                    <tr>
-                        <th>Student ID</th>
-                        <th>Student Name</th>
-                        <th>Progress</th>
-                        <th>Last Active</th>
-                        <th>Status</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for student in student_progress %}
-                    <tr>
-                        <td><strong>{{ student.student_id }}</strong></td>
-                        <td>{{ student.first_name }} {{ student.last_name }}</td>
-                        <td>
-                            <div class="progress-bar">
-                                <div class="progress-fill" style="width: {{ student.progress_percentage|default:0 }}%"></div>
-                            </div>
-                            <small>{{ student.progress_percentage|default:0 }}% complete</small>
-                        </td>
-                        <td>
-                            {% if student.last_active %}
-                                {{ student.last_active|timesince }} ago
-                            {% else %}
-                                Never
-                            {% endif %}
-                        </td>
-                        <td>
-                            <span class="status status-{% if student.is_active %}active{% else %}inactive{% endif %}">
-                                {% if student.is_active %}Active{% else %}Inactive{% endif %}
-                            </span>
-                        </td>
-                    </tr>
-                    {% empty %}
-                    <tr>
-                        <td colspan="5" class="text-center">No student data available</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <!-- Progress Chart -->
-        <div class="chart-container">
-            <div class="card-header">
-                <h2 class="card-title">Module Completion Rates</h2>
+
+            <!-- Top Performing Students Tab -->
+            <div id="top-students" class="tab-content">
+                <div class="welcome-banner">
+                    <h1 class="welcome-title">Top Performing Students</h1>
+                    <p class="welcome-subtitle">Track the highest achievers</p>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2 class="table-title">Top Performers</h2>
+                    </div>
+                    <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left;">
+    <thead>
+        <tr style="background: #2563eb; color: white;">
+            <th style="padding: 12px; border: 1px solid #ddd;">Rank</th>
+            <th style="padding: 12px; border: 1px solid #ddd;">Student Name</th>
+            <th style="padding: 12px; border: 1px solid #ddd;">Average Score</th>
+            
+        </tr>
+    </thead>
+    <tbody>
+        {% for student in top_performers %}
+        <tr style="background: {% cycle '#f9fafb' 'white' %}; cursor: pointer;" 
+            onmouseover="this.style.background='#e5e7eb'" 
+            onmouseout="this.style.background='{% cycle '#f9fafb' 'white' %}'">
+            <td style="padding: 12px; border: 1px solid #ddd;">{{ forloop.counter }}</td>
+            <td style="padding: 12px; border: 1px solid #ddd;"><strong>{{ student.first_name }} {{ student.last_name }}</strong></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.avg_score }}%</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No data available</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+                </div>
             </div>
-            <div class="chart-placeholder">
-                <i class="fas fa-chart-bar" style="font-size: 2rem; margin-right: 10px;"></i>
-                <span>Visualization of module completion rates across students</span>
-            </div>
+
+        </main>
+    </div>
+
+    <!-- Quiz Details Modal -->
+<div id="quizModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 class="modal-title" id="modalTitle">Student Quizzes</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-    </main>
+        <div class="modal-body" id="modalBody">
+            <p>Loading quiz data...</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-sm btn-danger" onclick="closeModal()">Close</button>
+        </div>
+    </div>
 </div>
 
-<!-- Footer -->
-<footer>
-    <div class="container">
-        <div class="copyright">
-            <p>&copy; 2025 Copperbelt University - School of ICT. All rights reserved.</p>
-            <p>Adaptive E-Learning Platform - Admin Dashboard</p>
+
+    <!-- Footer -->
+    <footer style="background:#1f2937; color:#f9fafb; padding:20px 10px; margin-top:40px; border-top:4px solid #2563eb; text-align:center; font-family:sans-serif;">
+    <div style="max-width:1200px; margin:0 auto;">
+        <p style="margin:5px 0; font-size:15px; font-weight:600;">
+            &copy; 2025 Copperbelt University - School of ICT
+        </p>
+        <p style="margin:5px 0; font-size:13px; color:#d1d5db;">
+            Adaptive E-Learning Platform | Powered by AI for Personalized Learning
+        </p>
+        <div style="margin-top:10px;">
+            <a href="#" style="color:#93c5fd; margin:0 8px; text-decoration:none; font-size:14px;">Privacy Policy</a> |
+            <a href="#" style="color:#93c5fd; margin:0 8px; text-decoration:none; font-size:14px;">Terms</a> |
+            <a href="#" style="color:#93c5fd; margin:0 8px; text-decoration:none; font-size:14px;">Support</a>
         </div>
     </div>
 </footer>
 
-    <script>
-        // Mobile sidebar toggle functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const mobileToggle = document.getElementById('mobile-toggle');
-            const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
-            
-            // Toggle sidebar function
-            function toggleSidebar() {
-                sidebar.classList.toggle('active');
-                sidebarOverlay.classList.toggle('active');
-                
-                // Change icon based on state
-                if (sidebar.classList.contains('active')) {
-                    mobileToggle.innerHTML = '<i class="fas fa-times"></i>';
-                } else {
-                    mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
-                }
-            }
-            
-            // Add event listeners
-            mobileToggle.addEventListener('click', toggleSidebar);
-            sidebarOverlay.addEventListener('click', toggleSidebar);
-            
-            // Close sidebar when clicking on a menu item (mobile only)
-            if (window.innerWidth < 768) {
-                document.querySelectorAll('.menu-link').forEach(link => {
-                    link.addEventListener('click', function() {
-                        sidebar.classList.remove('active');
-                        sidebarOverlay.classList.remove('active');
-                        mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
-                    });
-                });
-            }
+<!-- Add this before </body> in your current template -->
+<script>
 
-            // Search functionality for student table
-            const searchInput = document.querySelector('.search-input');
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    const rows = document.querySelectorAll('tbody tr');
-                    
-                    rows.forEach(row => {
-                        const studentId = row.cells[0].textContent.toLowerCase();
-                        const studentName = row.cells[1].textContent.toLowerCase();
-                        
-                        if (studentId.includes(searchTerm) || studentName.includes(searchTerm)) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
-                        }
-                    });
-                });
+    <script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Student search functionality
+    const studentSearch = document.getElementById('studentSearch');
+    const studentTableBody = document.querySelector('#user-management tbody');
+    const originalRows = Array.from(studentTableBody.querySelectorAll('tr'));
+    const rowsPerPage = 10;
+    let currentPage = 1;
+    let filteredStudents = [];
+    
+    // Initialize pagination if there are students
+    if (originalRows.length > 0 && !originalRows[0].querySelector('td[colspan]')) {
+        setupPagination(originalRows);
+    }
+    
+    // Search functionality
+    studentSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            // Show all students if search is empty
+            filteredStudents = originalRows;
+            currentPage = 1;
+            renderTablePage(filteredStudents, currentPage);
+            setupPagination(filteredStudents);
+            return;
+        }
+        
+        // Filter students based on search term
+        filteredStudents = originalRows.filter(row => {
+            const cells = row.querySelectorAll('td');
+            const studentId = cells[0].textContent.toLowerCase();
+            const studentName = cells[1].textContent.toLowerCase();
+            
+            return studentId.includes(searchTerm) || studentName.includes(searchTerm);
+        });
+        
+        currentPage = 1;
+        renderTablePage(filteredStudents, currentPage);
+        setupPagination(filteredStudents);
+    });
+    
+    function renderTablePage(students, page) {
+        // Clear table
+        studentTableBody.innerHTML = '';
+        
+        if (students.length === 0) {
+            // Show no results message
+            const noResultsRow = document.createElement('tr');
+            noResultsRow.innerHTML = '<td colspan="4" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No students found</td>';
+            studentTableBody.appendChild(noResultsRow);
+            return;
+        }
+        
+        // Calculate start and end indices for current page
+        const startIndex = (page - 1) * rowsPerPage;
+        const endIndex = Math.min(startIndex + rowsPerPage, students.length);
+        
+        // Add rows for current page
+        for (let i = startIndex; i < endIndex; i++) {
+            studentTableBody.appendChild(students[i].cloneNode(true));
+        }
+    }
+    
+    function setupPagination(students) {
+        // Remove existing pagination if it exists
+        const existingPagination = document.getElementById('studentPagination');
+        if (existingPagination) {
+            existingPagination.remove();
+        }
+        
+        if (students.length <= rowsPerPage) {
+            return; // No pagination needed
+        }
+        
+        const totalPages = Math.ceil(students.length / rowsPerPage);
+        
+        // Create pagination container
+        const paginationContainer = document.createElement('div');
+        paginationContainer.id = 'studentPagination';
+        paginationContainer.style.display = 'flex';
+        paginationContainer.style.justifyContent = 'center';
+        paginationContainer.style.marginTop = '20px';
+        paginationContainer.style.gap = '5px';
+        
+        // Previous button
+        const prevButton = document.createElement('button');
+        prevButton.textContent = '←';
+        prevButton.disabled = currentPage === 1;
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTablePage(students, currentPage);
+                setupPagination(students);
             }
         });
-    </script>
+        paginationContainer.appendChild(prevButton);
+        
+        // Page buttons
+        for (let i = 1; i <= totalPages; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.textContent = i;
+            pageButton.style.fontWeight = i === currentPage ? 'bold' : 'normal';
+            pageButton.addEventListener('click', () => {
+                currentPage = i;
+                renderTablePage(students, currentPage);
+                setupPagination(students);
+            });
+            paginationContainer.appendChild(pageButton);
+        }
+        
+        // Next button
+        const nextButton = document.createElement('button');
+        nextButton.textContent = '→';
+        nextButton.disabled = currentPage === totalPages;
+        nextButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTablePage(students, currentPage);
+                setupPagination(students);
+            }
+        });
+        paginationContainer.appendChild(nextButton);
+        
+        // Add pagination to the table container
+        const tableContainer = document.querySelector('.table-container');
+        tableContainer.appendChild(paginationContainer);
+    }
+});
+</script>
+    // Enhance the showQuizDetails function
+function showQuizDetails(studentId, studentName) {
+    const modal = document.getElementById('quizModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = studentName + " - Quiz Performance";
+    modalBody.innerHTML = "<p>Loading quiz data...</p>";
+    modal.style.display = "flex";
+
+    // Fetch quiz data via AJAX
+    fetch(`/admin/student-quizzes/${studentId}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.quizzes.length === 0) {
+            modalBody.innerHTML = "<p>No quiz attempts available.</p>";
+            return;
+        }
+
+        // Calculate average score
+        const totalScore = data.quizzes.reduce((sum, quiz) => sum + quiz.score, 0);
+        const averageScore = totalScore / data.quizzes.length;
+
+        let tableHtml = `
+        <div class="quiz-summary">
+            <p><strong>Total Quizzes Attempted:</strong> ${data.quizzes.length}</p>
+            <p><strong>Average Score:</strong> ${averageScore.toFixed(1)}%</p>
+        </div>
+        <table style="width:100%; border-collapse: collapse; font-size: 14px; text-align:left; margin-top: 15px;">
+            <thead>
+                <tr style="background:#2563eb; color:white;">
+                    <th style="padding:8px; border:1px solid #ddd;">Quiz Title</th>
+                    <th style="padding:8px; border:1px solid #ddd;">Score</th>
+                    <th style="padding:8px; border:1px solid #ddd;">Performance</th>
+                    <th style="padding:8px; border:1px solid #ddd;">Date Attempted</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        data.quizzes.forEach(q => {
+            let performanceClass = '';
+            if (q.score >= 80) performanceClass = 'high-score';
+            else if (q.score >= 60) performanceClass = 'medium-score';
+            else performanceClass = 'low-score';
+            
+            tableHtml += `<tr>
+                <td style="padding:8px; border:1px solid #ddd;">${q.title}</td>
+                <td style="padding:8px; border:1px solid #ddd;">${q.score}%</td>
+                <td style="padding:8px; border:1px solid #ddd;">
+                    <div class="progress-bar-small">
+                        <div class="progress-fill-small ${performanceClass}" style="width: ${q.score}%"></div>
+                    </div>
+                </td>
+                <td style="padding:8px; border:1px solid #ddd;">${q.date_attempted || 'N/A'}</td>
+            </tr>`;
+        });
+
+        tableHtml += '</tbody></table>';
+        modalBody.innerHTML = tableHtml;
+    })
+    .catch(error => {
+        console.error(error);
+        modalBody.innerHTML = "<p>Error loading quiz data.</p>";
+    });
+}
+
+// Add CSS for quiz performance indicators
+const quizModalStyle = `
+<style>
+.high-score {
+    background: #4caf50 !important;
+}
+
+.medium-score {
+    background: #ff9800 !important;
+}
+
+.low-score {
+    background: #f44336 !important;
+}
+
+.quiz-summary {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 6px;
+}
+
+.quiz-summary p {
+    margin: 5px 0;
+}
+</style>
+`;
+
+document.head.insertAdjacentHTML('beforeend', quizModalStyle);
+
+    // Add to your JavaScript in admin_dashboard.html
+function showProgressDetails(studentId, studentName) {
+    const modal = document.getElementById('progressModal');
+    const modalTitle = document.getElementById('progressModalTitle');
+    const modalBody = document.getElementById('progressModalBody');
+
+    modalTitle.innerText = studentName + " - Progress Details";
+    modalBody.innerHTML = "<p>Loading progress data...</p>";
+    modal.style.display = "flex";
+
+    // Fetch progress data via AJAX
+    fetch(`/admin/student-progress/${studentId}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            modalBody.innerHTML = `<p>Error: ${data.error}</p>`;
+            return;
+        }
+
+        let html = `<div class="student-info">
+            <h3>${data.student.name}</h3>
+            <p>Email: ${data.student.email}</p>
+        </div>`;
+
+        // Regular courses progress
+        if (data.regular_progress.length > 0) {
+            html += `<h4>Regular Courses Progress</h4>
+            <table class="progress-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Progress</th>
+                        <th>Completed</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            data.regular_progress.forEach(course => {
+                html += `<tr>
+                    <td>${course.course}</td>
+                    <td>
+                        <div class="progress-bar-small">
+                            <div class="progress-fill-small" style="width: ${course.progress}%"></div>
+                        </div>
+                        ${course.progress}%
+                    </td>
+                    <td>${course.completed}/${course.total} lessons</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+        }
+
+        // Generated courses progress
+        if (data.generated_progress.length > 0) {
+            html += `<h4>AI-Generated Courses Progress</h4>
+            <table class="progress-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Progress</th>
+                        <th>Completed</th>
+                        <th>Avg Score</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            data.generated_progress.forEach(course => {
+                html += `<tr>
+                    <td>${course.course}</td>
+                    <td>
+                        <div class="progress-bar-small">
+                            <div class="progress-fill-small" style="width: ${course.progress}%"></div>
+                        </div>
+                        ${course.progress}%
+                    </td>
+                    <td>${course.completed}/${course.total} topics</td>
+                    <td>${course.avg_score}%</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+        }
+
+        // Quiz performance
+        if (data.quiz_performance.length > 0) {
+            html += `<h4>Quiz Performance</h4>
+            <table class="progress-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Topic</th>
+                        <th>Score</th>
+                        <th>Completed</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            data.quiz_performance.forEach(quiz => {
+                html += `<tr>
+                    <td>${quiz.course}</td>
+                    <td>${quiz.topic}</td>
+                    <td>${quiz.score}%</td>
+                    <td>${quiz.completed_at}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+        }
+
+        modalBody.innerHTML = html;
+    })
+    .catch(error => {
+        console.error(error);
+        modalBody.innerHTML = "<p>Error loading progress data.</p>";
+    });
+}
+
+// Add CSS for the progress modal and tables
+const progressModalStyle = `
+<style>
+.progress-modal .modal-content {
+    max-width: 800px;
+}
+
+.progress-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.progress-table th, .progress-table td {
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+}
+
+.progress-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+}
+
+.progress-bar-small {
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    margin: 5px 0;
+    width: 100px;
+    display: inline-block;
+}
+
+.progress-fill-small {
+    height: 100%;
+    background: #2563eb;
+    border-radius: 4px;
+}
+
+.student-info {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.student-info h3 {
+    margin-bottom: 5px;
+    color: #1a237e;
+}
+
+.student-info p {
+    margin: 0;
+    color: #666;
+}
+</style>
+`;
+
+// Add the progress modal HTML
+const progressModalHTML = `
+<div id="progressModal" class="modal">
+    <div class="modal-content progress-modal">
+        <div class="modal-header">
+            <h2 class="modal-title" id="progressModalTitle">Student Progress</h2>
+            <button class="modal-close" onclick="closeProgressModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="progressModalBody">
+            <p>Loading progress data...</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-sm btn-danger" onclick="closeProgressModal()">Close</button>
+        </div>
+    </div>
+</div>
+`;
+
+// Add the modal to the document
+document.body.insertAdjacentHTML('beforeend', progressModalHTML);
+document.head.insertAdjacentHTML('beforeend', progressModalStyle);
+
+function closeProgressModal() {
+    document.getElementById('progressModal').style.display = "none";
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+    const modal = document.getElementById('progressModal');
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+}
+    // Sidebar toggle for mobile
+    const mobileToggle = document.getElementById('mobile-toggle');
+    const sidebar = document.getElementById('sidebar');
+    mobileToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+    });
+
+    // Tab switching
+    const menuLinks = document.querySelectorAll('.menu-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    menuLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Remove active class from all menu links
+            menuLinks.forEach(l => l.classList.remove('active'));
+            // Add active class to clicked link
+            link.classList.add('active');
+
+            // Hide all tab contents
+            tabContents.forEach(tab => tab.classList.remove('active'));
+            // Show selected tab
+            const targetTab = document.getElementById(link.dataset.tab);
+            if (targetTab) targetTab.classList.add('active');
+
+            // Close sidebar on mobile
+            if (window.innerWidth <= 1024) sidebar.classList.remove('active');
+        });
+    });
+
+    // Student search filter
+    const searchInput = document.getElementById('studentSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', () => {
+            const filter = searchInput.value.toLowerCase();
+            const rows = document.querySelectorAll('#user-management tbody tr');
+            rows.forEach(row => {
+                const nameCell = row.cells[1];
+                const text = nameCell ? nameCell.textContent.toLowerCase() : '';
+                if (text.indexOf(filter) > -1) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+</script>
+<script>
+function showQuizDetails(studentId, studentName) {
+    const modal = document.getElementById('quizModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = studentName + " - Quiz Progress";
+    modalBody.innerHTML = "<p>Loading quiz data...</p>";
+    modal.style.display = "flex";
+
+    // Fetch quiz data via AJAX
+    fetch(`/admin/student-quizzes/${studentId}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.quizzes.length === 0) {
+            modalBody.innerHTML = "<p>No quiz attempts available.</p>";
+            return;
+        }
+
+        let tableHtml = '<table style="width:100%; border-collapse: collapse; font-size: 14px; text-align:left;">';
+        tableHtml += '<thead><tr style="background:#2563eb; color:white;">';
+        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Quiz Title</th>';
+        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Score</th>';
+        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Completed</th>';
+        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Date Attempted</th>';
+        tableHtml += '</tr></thead><tbody>';
+
+        data.quizzes.forEach(q => {
+            tableHtml += `<tr style="background:#f9fafb;">`;
+            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.title}</td>`;
+            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.score}%</td>`;
+            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.completed ? 'Yes' : 'No'}</td>`;
+            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.date_attempted || 'N/A'}</td>`;
+            tableHtml += `</tr>`;
+        });
+
+        tableHtml += '</tbody></table>';
+        modalBody.innerHTML = tableHtml;
+    })
+    .catch(error => {
+        console.error(error);
+        modalBody.innerHTML = "<p>Error loading quiz data.</p>";
+    });
+}
+
+function closeModal() {
+    document.getElementById('quizModal').style.display = "none";
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+    const modal = document.getElementById('quizModal');
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+}
+</script>
+
+
+
 </body>
+
 </html>

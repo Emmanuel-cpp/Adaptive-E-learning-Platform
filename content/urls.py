@@ -12,8 +12,9 @@ urlpatterns = [
     path('api/generate-course/', views.generate_course, name='generate_course'),
     path('complete-lesson/<int:lesson_id>/', views.complete_lesson, name='complete_lesson'),
     path('api/complete-generated-topic/<int:topic_id>/', views.complete_generated_topic, name='complete_generated_topic'),
-    path('api/complete_topic/', views.complete_topic, name='complete_topic'),
+    path('api/complete-generated-topic/', views.complete_generated_topic, name='complete_generated_topic'),
     path('learning/', views.learning_default, name='learning_default'),
     path('api/complete_topic/', views.complete_topic, name='complete_topic'),
     path('api/get-topic-data/<int:topic_id>/', views.get_topic_data_api, name='get_topic_data_api'),
+    path('progress-analysis/', views.progress_analysis_view, name='progress_analysis'),
 ]

@@ -30,7 +30,7 @@ class RegistrationForm(UserCreationForm):
     email = forms.EmailField(required=True)
     first_name = forms.CharField(max_length=30, required=True)
     last_name = forms.CharField(max_length=30, required=True)
-    student_id = forms.CharField(  # Add student_id field
+    student_id = forms.CharField(  
         max_length=8,
         required=True,
         label="Student ID",

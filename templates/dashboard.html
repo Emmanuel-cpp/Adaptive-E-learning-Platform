@@ -1200,45 +1200,19 @@
     </header>
 
     <!-- Main Content -->
-<main class="main-content">
-    <div class="container">
-        <div class="welcome-banner">
-            <h1 class="welcome-title">Welcome {{ student.first_name }} {{student.last_name}}</h1>
-            <p class="welcome-subtitle">Continue your journey to master C++ programming fundamentals.</p>
-        </div>
-        
-        <div class="overall-progress-card dashboard-card">
-            <div class="card-header">
-                <h2 class="card-title">Overall Progress</h2>
-                <div class="card-icon">
-                    <i class="fas fa-chart-line"></i>
-                </div>
-            </div>
-            
-            <div class="progress-container">
-                <div class="progress-header">
-                    <span class="progress-label">All Courses</span>
-                    <span class="progress-percent">{{ overall_progress }}%</span>
-                </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" style="width: {{ overall_progress }}%"></div>
-                </div>
+    <main class="main-content">
+        <div class="container">
+            <div class="welcome-banner">
+                <h1 class="welcome-title">Welcome {{ student.first_name }} {{student.last_name}}</h1>
+                <p class="welcome-subtitle">Continue your journey to master C++ programming fundamentals.</p>
             </div>
 
-            <div class="progress-stats">
-                <div class="stat-item">
-                    <span class="stat-number">{{ total_completed }}</span>
-                    <span class="stat-label">Lessons Completed</span>
-                </div>
-                <div class="stat-item">
-                    <span class="stat-number">{{ total_lessons }}</span>
-                    <span class="stat-label">Total Lessons</span>
-                </div>
-            </div>
-        </div>
-        
-        <div class="dashboard-grid">
-            {% if last_accessed_progress %}
+            <!-- Overall Progress Card -->
+           
+
+            <!-- Dashboard Grid: Continue & Generate -->
+            <div class="dashboard-grid">
+                {% if last_accessed_progress %}
                 <div class="continue-card dashboard-card">
                     <div class="card-header">
                         <h2 class="card-title">Continue Learning</h2>
@@ -1254,61 +1228,70 @@
                         Continue Now
                     </a>
                 </div>
-            {% endif %}
+                {% endif %}
 
-            <div class="action-card dashboard-card" onclick="openGenerateCourseModal()">
-                <div class="action-icon">
-                    <i class="fas fa-magic"></i>
+                <!-- Generate Lesson Card -->
+                <div class="action-card dashboard-card" onclick="openGenerateCourseModal()">
+                    <div class="action-icon">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <h3 class="action-title">Generate Lesson</h3>
+                    <p class="action-description">Create a personalized C++ lesson using AI</p>
                 </div>
-                <h3 class="action-title">Generate Course</h3>
-                <p class="action-description">Create a personalized course using AI</p>
             </div>
-        </div>
 
-        <div class="dashboard-grid-section">
-            <h2 class="section-title">Your Generated Courses</h2>
-            <div class="dashboard-grid">
-                {% for course in generated_courses %}
+            <!-- Generated Lessons Section -->
+            <div class="dashboard-grid-section">
+                <h2 class="section-title">Your Generated Lessons</h2>
+                <div class="dashboard-grid">
+                    {% for course in generated_courses %}
                     <div class="course-card dashboard-card">
                         <div class="card-header">
-                            <h3 class="card-title">{{ course.title }}</h3>
+                            <h3 class="card-title">Lesson: {{ course.generated_content.topic }}</h3>
                         </div>
                         <div class="card-content">
                             <p class="course-description">{{ course.description|truncatechars:100 }}</p>
                             <div class="course-meta">
                                 <span class="meta-item"><i class="fas fa-layer-group"></i> {{ course.chapters.count }} Chapters</span>
+                                <span class="meta-item"><i class="fas fa-signal"></i> {{ course.difficulty|title }}</span>
                             </div>
                         </div>
                         <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ course.chapters.first.topics.first.id }}" class="continue-button">
-                            View Course
+                            View Lesson
                         </a>
                     </div>
-                {% empty %}
-                    <p class="no-courses">No generated courses found. Try creating one!</p>
-                {% endfor %}
+                    {% empty %}
+                        <p class="no-courses">No generated lessons found. Try creating one!</p>
+                    {% endfor %}
+                </div>
             </div>
-        </div>
 
-        {% if generated_courses.has_other_pages %}
+            <!-- Pagination -->
+            {% if generated_courses.has_other_pages %}
             <div class="pagination">
                 {% if generated_courses.has_previous %}
                     <a href="?page={{ generated_courses.previous_page_number }}">Previous</a>
                 {% else %}
                     <span class="disabled">Previous</span>
                 {% endif %}
-
-                
-
                 {% if generated_courses.has_next %}
                     <a href="?page={{ generated_courses.next_page_number }}">Next</a>
                 {% else %}
                     <span class="disabled">Next</span>
                 {% endif %}
             </div>
-        {% endif %}
-    </div>
-</main>
+            {% endif %}
+        </div>
+    </main>
 
+    <!-- Progress Analysis Card -->
+    <div class="action-card" onclick="window.location.href='{% url 'progress_analysis' %}'">
+        <div class="action-icon">
+            <i class="fas fa-chart-line"></i>
+        </div>
+        <h3 class="action-title">Progress Analysis</h3>
+        <p class="action-description">Get AI-powered insights into your learning journey</p>
+    </div>
 
     <!-- Footer -->
     <footer>
@@ -1319,79 +1302,131 @@
             </div>
         </div>
     </footer>
- <script>
-        function openGenerateCourseModal() {
-            document.getElementById('generate-course-modal').style.display = 'flex';
-        }
 
-        function closeGenerateCourseModal() {
-            document.getElementById('generate-course-modal').style.display = 'none';
-        }
+    <!-- {% include 'courses/generate_course_modal.html' %}-->
+   
 
-        function getCSRFToken() {
-            const cookieValue = document.cookie
-                .split('; ')
-                .find(row => row.startsWith('csrftoken='))
-                ?.split('=')[1];
-            return cookieValue;
-        }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            const generateForm = document.getElementById('generate-course-form');
-            if (generateForm) {
-                generateForm.addEventListener('submit', async function(event) {
-                    event.preventDefault();
-
-                    document.getElementById('generate-icon').style.display = 'none';
-                    document.getElementById('generate-text').style.display = 'none';
-                    document.getElementById('generate-loader').style.display = 'inline-block';
-                    
-                    const formData = {
-                        name: document.getElementById('course-name').value,
-                        description: document.getElementById('course-description').value,
-                        noOfChapters: parseInt(document.getElementById('chapter-count').value),
-                        level: document.getElementById('course-level').value,
-                        category: document.getElementById('course-category').value,
-                        includeVideo: document.getElementById('include-video').checked
-                    };
-
-                    const csrfToken = getCSRFToken();
-
-                    try {
-                        const response = await fetch('{% url "generate_course" %}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRFToken': csrfToken
-                            },
-                            body: JSON.stringify(formData)
-                        });
-
-                        const contentType = response.headers.get('content-type');
-                        if (!contentType || !contentType.includes('application/json')) {
-                            throw new Error('Server did not return JSON. Check URL or view.');
-                        }
-
-                        const data = await response.json();
-
-                        if (data.success) {
-                            window.location.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.first_topic_id}`;
-                        } else {
-                            alert('Error generating course: ' + data.error);
-                            document.getElementById('generate-icon').style.display = 'inline';
-                            document.getElementById('generate-text').style.display = 'inline';
-                            document.getElementById('generate-loader').style.display = 'none';
-                        }
-                    } catch (error) {
-                        alert('Error generating course: ' + error.message);
-                        document.getElementById('generate-icon').style.display = 'inline';
-                        document.getElementById('generate-text').style.display = 'inline';
-                        document.getElementById('generate-loader').style.display = 'none';
+   <script>
+    function openGenerateCourseModal() {
+        document.getElementById('generate-course-modal').style.display = 'flex';
+    }
+    
+    function closeGenerateCourseModal() {
+        document.getElementById('generate-course-modal').style.display = 'none';
+    }
+    
+    function getCSRFToken() {
+        const cookieValue = document.cookie
+            .split('; ')
+            .find(row => row.startsWith('csrftoken='))
+            ?.split('=')[1];
+        return cookieValue;
+    }
+    
+    // Wait for DOM to be fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+        const generateForm = document.getElementById('generate-course-form');
+        if (generateForm) {
+            generateForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+    
+                // Show loading state
+                document.getElementById('generate-icon').style.display = 'none';
+                document.getElementById('generate-text').style.display = 'none';
+                document.getElementById('generate-loader').style.display = 'inline-block';
+    
+                // Get form data - use the correct field IDs from your modal
+                const formData = {
+                    name: document.getElementById('course-name').value,
+                    description: document.getElementById('course-description').value,
+                    noOfChapters: parseInt(document.getElementById('chapter-count').value),
+                    level: document.getElementById('difficulty-level').value,
+                    includeVideo: false // This field doesn't exist in your modal
+                };
+    
+                const csrfToken = getCSRFToken();
+    
+                try {
+                    const response = await fetch('{% url "generate_course" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': csrfToken
+                        },
+                        body: JSON.stringify(formData)
+                    });
+    
+                    const data = await response.json();
+    
+                    if (data.success) {
+                        window.location.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.first_topic_id}`;
+                    } else {
+                        alert('Error generating lesson: ' + data.error);
+                        resetGenerateButton();
                     }
-                });
-            }
+                } catch (error) {
+                    console.error('Error:', error);
+                    alert('Error generating lesson: ' + error.message);
+                    resetGenerateButton();
+                }
+            });
+        }
+        
+        // Function to reset button state
+        function resetGenerateButton() {
+            document.getElementById('generate-icon').style.display = 'inline';
+            document.getElementById('generate-text').style.display = 'inline';
+            document.getElementById('generate-loader').style.display = 'none';
+        }
+    });
+
+
+    document.getElementById('generate-course-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    console.log('Form submission started');
+    
+    document.getElementById('generate-icon').style.display = 'none';
+    document.getElementById('generate-text').style.display = 'none';
+    document.getElementById('generate-loader').style.display = 'inline';
+
+    const formData = {
+        name: document.getElementById('course-name').value,
+        description: document.getElementById('course-description').value,
+        noOfChapters: parseInt(document.getElementById('chapter-count').value),
+        level: document.getElementById('difficulty-level').value,
+        includeVideo: document.getElementById('include-video').checked
+    };
+
+    console.log('Sending data:', formData);
+
+    try {
+        const response = await fetch('{% url "generate_course" %}', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+            body: JSON.stringify(formData)
         });
-    </script>
+        
+        console.log('Response status:', response.status);
+        
+        const data = await response.json();
+        console.log('Response data:', data);
+        
+        if (data.success) {
+            console.log('Success, redirecting...');
+            window.location.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.first_topic_id}`;
+        } else {
+            console.error('Error from server:', data.error);
+            alert('Error generating lessons: ' + data.error);
+            resetGenerateButton();
+        }
+    } catch (error) {
+        console.error('Request failed:', error);
+        alert('Error generating lessons: ' + error.message);
+        resetGenerateButton();
+    }
+});
+</script>
 </body>
 </html>
+
 {% include 'courses/generate_course_modal.html' %}

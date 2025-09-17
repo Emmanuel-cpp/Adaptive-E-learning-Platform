@@ -1,0 +1,721 @@
+<!-- templates/progress_analysis.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CBU Learn - Progress Analysis</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #0d47a1;
+            --accent: #00897b;
+            --dark: #1a237e;
+            --light: #f5f5f5;
+            --gray: #37474f;
+            --light-gray: #e0e0e0;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --danger: #f44336;
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e4e7f1 100%);
+            color: #333;
+            line-height: 1.6;
+            overflow-x: hidden;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        /* Header */
+        header {
+            background: rgba(13, 71, 161, 0.95);
+            position: fixed;
+            width: 100%;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+        }
+        
+        .logo {
+            font-family: 'Montserrat', sans-serif;
+            font-weight: 700;
+            font-size: 1.5rem;
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .logo-icon {
+            background: white;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        
+        .user-menu {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .nav-buttons {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .nav-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition);
+        }
+        
+        .nav-btn.primary {
+            background: white;
+            color: var(--primary);
+        }
+        
+        .nav-btn.outline {
+            background: transparent;
+            color: white;
+            border: 2px solid white;
+        }
+        
+        .nav-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: 100px 0 40px;
+        }
+        
+        .page-header {
+            margin-bottom: 30px;
+            text-align: center;
+        }
+        
+        .page-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 2.5rem;
+            color: var(--dark);
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        .page-subtitle {
+            color: var(--gray);
+            font-size: 1.2rem;
+            max-width: 700px;
+            margin: 0 auto;
+        }
+        
+        /* Progress Cards */
+        .progress-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .progress-card {
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            transition: var(--transition);
+            border: 1px solid rgba(13, 71, 161, 0.1);
+        }
+        
+        .progress-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(13, 71, 161, 0.1);
+        }
+        
+        .card-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+        }
+        
+        .card-icon {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: rgba(13, 71, 161, 0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--primary);
+            font-size: 1.2rem;
+        }
+        
+        .progress-item {
+            margin-bottom: 20px;
+        }
+        
+        .progress-item h3 {
+            font-size: 1.1rem;
+            margin-bottom: 10px;
+            color: var(--gray);
+        }
+        
+        .progress-bar {
+            height: 12px;
+            background: var(--light-gray);
+            border-radius: 6px;
+            overflow: hidden;
+            margin-bottom: 8px;
+            position: relative;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--primary));
+            border-radius: 6px;
+            transition: width 0.8s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-fill::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            bottom: 0;
+            right: 0;
+            background-image: linear-gradient(
+                -45deg, 
+                rgba(255, 255, 255, 0.2) 25%, 
+                transparent 25%, 
+                transparent 50%, 
+                rgba(255, 255, 255, 0.2) 50%, 
+                rgba(255, 255, 255, 0.2) 75%, 
+                transparent 75%, 
+                transparent
+            );
+            z-index: 1;
+            background-size: 20px 20px;
+            animation: move 2s linear infinite;
+            border-radius: 6px;
+        }
+        
+        @keyframes move {
+            0% {
+                background-position: 0 0;
+            }
+            100% {
+                background-position: 20px 20px;
+            }
+        }
+        
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.95rem;
+            color: var(--gray);
+        }
+        
+        .score-display {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.85rem;
+        }
+        
+        .score-high {
+            background: rgba(76, 175, 80, 0.15);
+            color: #2e7d32;
+        }
+        
+        .score-medium {
+            background: rgba(255, 152, 0, 0.15);
+            color: #ef6c00;
+        }
+        
+        .score-low {
+            background: rgba(244, 67, 54, 0.15);
+            color: #d32f2f;
+        }
+        
+        /* AI Analysis */
+        .ai-section {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+            margin-bottom: 30px;
+            border: 1px solid rgba(13, 71, 161, 0.1);
+        }
+        
+        .section-title {
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1.8rem;
+            color: var(--dark);
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(13, 71, 161, 0.1);
+        }
+        
+        .section-title i {
+            color: var(--primary);
+            background: rgba(13, 71, 161, 0.1);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .analysis-content {
+            line-height: 1.8;
+            margin-bottom: 25px;
+            padding: 20px;
+            background: rgba(13, 71, 161, 0.03);
+            border-radius: 12px;
+            border-left: 4px solid var(--primary);
+            font-size: 1.1rem;
+        }
+        
+        .strengths-weaknesses {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 25px;
+            margin-bottom: 30px;
+        }
+        
+        .strengths-container, .weaknesses-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
+        }
+        
+        .strengths-container {
+            border-top: 4px solid var(--success);
+        }
+        
+        .weaknesses-container {
+            border-top: 4px solid var(--warning);
+        }
+        
+        .strengths-container h3, .weaknesses-container h3 {
+            font-size: 1.3rem;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .strengths-container h3 {
+            color: var(--success);
+        }
+        
+        .weaknesses-container h3 {
+            color: var(--warning);
+        }
+        
+        .strengths-list, .weaknesses-list {
+            list-style: none;
+        }
+        
+        .strengths-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(76, 175, 80, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .strengths-list li::before {
+            content: "✓";
+            color: var(--success);
+            font-weight: bold;
+            background: rgba(76, 175, 80, 0.15);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .weaknesses-list li {
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 152, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .weaknesses-list li::before {
+            content: "!";
+            color: var(--warning);
+            font-weight: bold;
+            background: rgba(255, 152, 0, 0.15);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .recommendations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .recommendation-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+            transition: var(--transition);
+            border: 1px solid rgba(13, 71, 161, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .recommendation-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 25px rgba(0, 0, 0, 0.1);
+        }
+        
+        .recommendation-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px;
+            height: 100%;
+            background: linear-gradient(to bottom, var(--primary), var(--accent));
+        }
+        
+        .rec-number {
+            display: inline-block;
+            width: 32px;
+            height: 32px;
+            background: var(--primary);
+            color: white;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 32px;
+            font-size: 0.9rem;
+            margin-right: 12px;
+            font-weight: 600;
+        }
+        
+        .rec-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 10px;
+            display: block;
+        }
+        
+        .rec-description {
+            color: var(--gray);
+            line-height: 1.6;
+        }
+        
+        .encouragement-box {
+            background: linear-gradient(135deg, rgba(13, 71, 161, 0.1), rgba(0, 137, 123, 0.1));
+            border-radius: 12px;
+            padding: 25px;
+            text-align: center;
+            margin-top: 30px;
+            border-left: 4px solid var(--accent);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .encouragement-box::before {
+            content: '"';
+            position: absolute;
+            top: 10px;
+            left: 20px;
+            font-size: 5rem;
+            color: rgba(13, 71, 161, 0.1);
+            font-family: serif;
+            line-height: 1;
+        }
+        
+        .encouragement-box h3 {
+            color: var(--accent);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .encouragement-box p {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            margin: 0;
+            font-style: italic;
+            color: var(--dark);
+        }
+        
+        /* Footer */
+        footer {
+            background: var(--dark);
+            color: white;
+            padding: 30px 0 15px;
+            margin-top: 40px;
+        }
+        
+        .copyright {
+            text-align: center;
+            padding-top: 15px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            color: #adb5bd;
+            font-size: 0.9rem;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .progress-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .strengths-weaknesses {
+                grid-template-columns: 1fr;
+            }
+            
+            .recommendations-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .page-title {
+                font-size: 2rem;
+            }
+            
+            .section-title {
+                font-size: 1.5rem;
+            }
+            
+            .section-title i {
+                width: 40px;
+                height: 40px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header -->
+    <header>
+        <div class="container">
+            <nav>
+                <a href="{% url 'dashboard' %}" class="logo">
+                    <div class="logo-icon">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <span class="logo-text">CBU Learn</span>
+                </a>
+                
+                <div class="user-menu">
+                    <div class="user-avatar">{{ student.first_name|first }}{{ student.last_name|first }}</div>
+                    <div class="nav-buttons">
+                        <a href="{% url 'dashboard' %}" class="nav-btn outline">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                        <a href="{% url 'logout' %}" class="nav-btn primary">
+                            <i class="fas fa-sign-out-alt"></i> Logout
+                        </a>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <div class="page-header">
+                <h1 class="page-title">AI-Powered Progress Analysis</h1>
+                <p class="page-subtitle">Personalized insights and recommendations based on your learning journey and performance patterns</p>
+            </div>
+            
+            <!-- Progress Overview -->
+            <div class="progress-grid">
+                
+                
+                <div class="progress-card">
+                    <div class="card-header">
+                        <h2 class="card-title">AI-Generated Courses</h2>
+                        <div class="card-icon">
+                            <i class="fas fa-robot"></i>
+                        </div>
+                    </div>
+                    {% for course in generated_progress %}
+                    <div class="progress-item">
+                        <h3>{{ course.course.title }}</h3>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: {{ course.progress }}%"></div>
+                        </div>
+                        <div class="progress-info">
+                            <span>Progress</span>
+                            <span>{{ course.completed }}/{{ course.total }} ({{ course.progress }}%)</span>
+                        </div>
+                        <div class="progress-info">
+                            <span>Avg. Quiz Score</span>
+                            <span class="score-display 
+                                {% if course.avg_score >= 70 %}score-high
+                                {% elif course.avg_score >= 50 %}score-medium
+                                {% else %}score-low{% endif %}">
+                            </span>
+                        </div>
+                    </div>
+                    {% if not forloop.last %}<hr>{% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <!-- AI Analysis and Recommendations -->
+            <div class="ai-section">
+                <h2 class="section-title"><i class="fas fa-brain"></i> AI Analysis</h2>
+                
+                <div class="analysis-content">
+                    <p>{{ ai_recommendations.analysis }}</p>
+                </div>
+                
+                <div class="strengths-weaknesses">
+                    {% if ai_recommendations.strengths %}
+                    <div class="strengths-container">
+                        <h3><i class="fas fa-check-circle"></i> Your Strengths</h3>
+                        <ul class="strengths-list">
+                            {% for strength in ai_recommendations.strengths %}
+                            <li>{{ strength }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                    
+                    {% if ai_recommendations.weaknesses %}
+                    <div class="weaknesses-container">
+                        <h3><i class="fas fa-exclamation-triangle"></i> Areas for Improvement</h3>
+                        <ul class="weaknesses-list">
+                            {% for weakness in ai_recommendations.weaknesses %}
+                            <li>{{ weakness }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    {% endif %}
+                </div>
+                
+                <h3 class="section-title"><i class="fas fa-lightbulb"></i> Personalized Recommendations</h3>
+                <div class="recommendations-grid">
+                    {% for recommendation in ai_recommendations.recommendations %}
+                    <div class="recommendation-card">
+                        <span class="rec-number">{{ forloop.counter }}</span>
+                        <span class="rec-title">{{ recommendation.title }}</span>
+                        <p class="rec-description">{{ recommendation.description }}</p>
+                    </div>
+                    {% endfor %}
+                </div>
+                
+                <div class="encouragement-box">
+                    <h3><i class="fas fa-star"></i> Words of Encouragement</h3>
+                    <p>{{ ai_recommendations.encouragement }}</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="copyright">
+                <p>&copy; 2025 Copperbelt University - School of ICT. All rights reserved.</p>
+                <p>Adaptive E-Learning Platform with AI Progress Tracking</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Animate progress bars on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const progressBars = document.querySelectorAll('.progress-fill');
+            
+            progressBars.forEach(bar => {
+                const width = bar.style.width;
+                bar.style.width = '0';
+                
+                setTimeout(() => {
+                    bar.style.width = width;
+                }, 300);
+            });
+        });
+    </script>
+</body>
+</html>

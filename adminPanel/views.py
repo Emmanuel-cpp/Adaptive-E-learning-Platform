@@ -1,26 +1,23 @@
-# users/views.py - Add this to your existing views
-from django.shortcuts import render, redirect
+# users/views.py - Enhanced admin dashboard view
+from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
 from datetime import timedelta
-from progress.models import CourseProgress, ModuleProgress, UserProgress
-from content.models import Course, Module, Lesson
-from django.db.models import Avg, Count, Sum
-from django.contrib.auth import get_user_model
-# Add these imports at the top of your views.py file
 from django.contrib.admin.views.decorators import staff_member_required
 from django.db.models import Count, Avg, Sum, Q, Max
-from django.db.models.functions import Greatest
-from datetime import timedelta
-from django.utils import timezone
+from django.db.models.functions import Greatest, Coalesce
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.views.decorators.csrf import csrf_protect
 from django.contrib.auth import get_user_model
-from django.shortcuts import render
-from content.models import Course, Module, Lesson
+from content.models import Course, Module, Lesson, GeneratedCourse, GeneratedTopic, GeneratedTopicCompletion
 from progress.models import CourseProgress, ModuleProgress, UserProgress
-from django.db.models.functions import Coalesce
+import json
+from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 User = get_user_model()
 
+# Update your admin_dashboard view in views.py
 @staff_member_required
 def admin_dashboard(request):
     # Get current time and time ranges for analytics
@@ -29,7 +26,6 @@ def admin_dashboard(request):
     one_day_ago = now - timedelta(days=1)
     
     # User statistics
-    User = get_user_model()
     total_students = User.objects.filter(is_staff=False).count()
     new_students_this_week = User.objects.filter(
         is_staff=False, 
@@ -41,68 +37,108 @@ def admin_dashboard(request):
     total_modules = Module.objects.count()
     total_lessons = Lesson.objects.count()
     
-    # Progress statistics
-    avg_progress = CourseProgress.objects.aggregate(
-        avg_progress=Avg('completion_percentage')
-    )['avg_progress'] or 0
+    # AI Courses statistics
+    ai_courses_count = GeneratedCourse.objects.count()
+    new_ai_courses = GeneratedCourse.objects.filter(
+        created_at__gte=one_week_ago
+    ).count()
     
-    # Calculate progress change from last week
-    progress_last_week = CourseProgress.objects.filter(
-        last_accessed__gte=one_week_ago,
-        last_accessed__lt=one_day_ago
-    ).aggregate(avg_progress=Avg('completion_percentage'))['avg_progress'] or 0
+    # Calculate overall progress statistics
+    total_lessons = Lesson.objects.count()
+    total_topics = GeneratedTopic.objects.count()
+    total_learning_items = total_lessons + total_topics
     
-    progress_change = round(avg_progress - progress_last_week, 1) if progress_last_week else 0
+    # Calculate completed items across all students
+    completed_lessons_all = UserProgress.objects.filter(is_completed=True).count()
+    completed_topics_all = GeneratedTopicCompletion.objects.count()  # Assuming existence means completion
+    total_completed_all = completed_lessons_all + completed_topics_all
     
-    # Active users (accessed progress in last 30 minutes)
+    if total_learning_items > 0:
+        avg_progress = (total_completed_all / total_learning_items) * 100
+    else:
+        avg_progress = 0
+    
+    # For progress change, we set to 0 for now as we don't have historical data
+    progress_change = 0
+    
+    # Active users
     active_now = User.objects.filter(
-        Q(lesson_progress__last_accessed__gte=now-timedelta(minutes=30)) |
+        Q(progress__last_accessed__gte=now-timedelta(minutes=30)) |
         Q(module_progress__last_accessed__gte=now-timedelta(minutes=30)) |
         Q(course_progress__last_accessed__gte=now-timedelta(minutes=30))
     ).distinct().count()
     
-    # Active users yesterday at same time
     active_yesterday = User.objects.filter(
-        Q(lesson_progress__last_accessed__gte=now-timedelta(days=1, minutes=30)) &
-        Q(lesson_progress__last_accessed__lt=now-timedelta(days=1)) |
-        Q(module_progress__last_accessed__gte=now-timedelta(days=1, minutes=30)) &
-        Q(module_progress__last_accessed__lt=now-timedelta(days=1)) |
-        Q(course_progress__last_accessed__gte=now-timedelta(days=1, minutes=30)) &
-        Q(course_progress__last_accessed__lt=now-timedelta(days=1))
+        Q(progress__last_accessed__gte=now-timedelta(days=1, minutes=30)) & Q(progress__last_accessed__lt=now-timedelta(days=1)) |
+        Q(module_progress__last_accessed__gte=now-timedelta(days=1, minutes=30)) & Q(module_progress__last_accessed__lt=now-timedelta(days=1)) |
+        Q(course_progress__last_accessed__gte=now-timedelta(days=1, minutes=30)) & Q(course_progress__last_accessed__lt=now-timedelta(days=1))
     ).distinct().count()
     
     active_change = active_now - active_yesterday
     
-    # Use the correct field name 'lessons' (plural)
+    # Module annotations
     modules = Module.objects.annotate(
         lesson_count=Count('lessons'),
         total_duration=Sum('lessons__estimated_time')
     )
-    """
-    # Student progress data - use a different name for the annotation to avoid conflict
-    student_progress = User.objects.filter(is_staff=False).annotate(
-        progress_percentage=Avg('course_progress__completion_percentage'),
-        last_activity=Greatest(  # Changed from last_active to last_activity
-            Max('lesson_progress__last_accessed'),
-            Max('module_progress__last_accessed'),
-            Max('course_progress__last_accessed')
-        )
-    ).order_by('-last_activity')[:10]  # Top 10 most recent"""
-    # In your admin_dashboard view, replace the student_progress query:
-    student_progress = User.objects.filter(is_staff=False).annotate(
-        progress_percentage=Coalesce(Avg('course_progress__completion_percentage'), 0.0),
-        last_activity=Greatest(
-            Max('lesson_progress__last_accessed'),
-            Max('module_progress__last_accessed'),
-            Max('course_progress__last_accessed')
-        )
-    ).order_by('-last_activity')[:10]
     
-    # Add this to your view after calculating student_progress
-    now = timezone.now()
-    for student in student_progress:
-        student.is_active = student.last_activity and (now - student.last_activity) < timedelta(minutes=30)
-            
+    # Build student progress list
+    students = User.objects.filter(is_staff=False)
+    student_progress_list = []
+    for student in students:
+        completed_lessons = UserProgress.objects.filter(student=student, is_completed=True).count()
+        completed_topics = GeneratedTopicCompletion.objects.filter(student=student).count()
+        total_completed = completed_lessons + completed_topics
+        progress_percentage = (total_completed / total_learning_items) * 100 if total_learning_items > 0 else 0
+        
+        # Get last activity
+        last_activity = UserProgress.objects.filter(
+            student=student
+        ).order_by('-last_accessed').first()
+        
+        student_progress_list.append({
+            'student_id': student.student_id,
+            'first_name': student.first_name,
+            'last_name': student.last_name,
+            'progress_percentage': progress_percentage,
+            'last_active': last_activity.last_accessed if last_activity else None,
+        })
+
+    # Sort by progress percentage descending
+    student_progress_list.sort(key=lambda x: x['progress_percentage'], reverse=True)
+
+    
+    # Recent activities
+    recent_activities = UserProgress.objects.select_related(
+        'student', 'lesson', 'lesson__module'
+    ).order_by('-last_accessed')[:10]
+    
+    # Top performers
+    total_topics_count = GeneratedTopic.objects.count()
+    top_performers = User.objects.filter(is_staff=False).annotate(
+        avg_score=Coalesce(Avg('generatedtopiccompletion__score'), 0.0),
+        completed_topics_count=Count('generatedtopiccompletion')
+    ).order_by('-avg_score')[:5]
+    
+    for performer in top_performers:
+        performer.total_topics = total_topics_count
+        performer.completion_percentage = (
+            (performer.completed_topics_count / total_topics_count * 100)
+            if total_topics_count > 0 else 0
+        )
+        performer.time_spent = performer.completed_topics_count * 30  # 30 minutes per topic
+    
+    # Pagination for student progress
+    page = request.GET.get('page', 1)
+    paginator = Paginator(student_progress_list, 10)  # Show 10 students per page
+    
+    try:
+        students_page = paginator.page(page)
+    except PageNotAnInteger:
+        students_page = paginator.page(1)
+    except EmptyPage:
+        students_page = paginator.page(paginator.num_pages)    
+    
     context = {
         'total_students': total_students,
         'new_students_this_week': new_students_this_week,
@@ -110,11 +146,293 @@ def admin_dashboard(request):
         'progress_change': progress_change,
         'active_now': active_now,
         'active_change': active_change,
+        'ai_courses_count': ai_courses_count,
+        'new_ai_courses': new_ai_courses,
         'modules': modules,
-        'student_progress': student_progress,
-    }
-    
+        'student_progress': student_progress_list,  # This is now our list
+        'recent_activities': recent_activities,
+        'top_performers': top_performers,
+        'total_completed': total_completed_all,
+        'total_learning_items': total_learning_items,
+    }   
     return render(request, 'admin_dashboard.html', context)
+
+# Add these API endpoints for the admin dashboard
+@require_POST
+@staff_member_required
+@csrf_protect
+def delete_student(request, student_id):
+    """Delete a student account"""
+    try:
+        student = get_object_or_404(User, id=student_id, is_staff=False)
+        
+        # Check if the admin is trying to delete themselves
+        if request.user == student:
+            return JsonResponse({
+                'success': False,
+                'error': 'You cannot delete your own account'
+            }, status=400)
+            
+        student.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Student deleted successfully'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to delete student: {str(e)}'
+        }, status=500)
+
+# In student_details function, update the response to match frontend expectations
+@staff_member_required
+def student_details(request, student_id):
+    """Get detailed information about a student"""
+    try:
+        student = get_object_or_404(User, id=student_id, is_staff=False)
+        
+        # Get student progress data
+        progress = GeneratedTopicCompletion.objects.filter(student=student).aggregate(
+            avg_score=Avg('score'),
+            total_topics=Count('id'),
+            completed_topics=Count('id', filter=Q(completed=True))
+        )
+        
+        # Calculate overall progress percentage
+        total_topics = GeneratedTopic.objects.count()
+        progress_percentage = (progress['completed_topics'] / total_topics * 100) if total_topics > 0 else 0
+        
+        # Get last activity
+        last_activity = UserProgress.objects.filter(
+            student=student
+        ).order_by('-last_accessed').first()
+        
+        # Get learning style from Student model if it exists
+        learning_style = "Not set"
+        mastery_level = "Not set"
+        if hasattr(student, 'student'):
+            learning_style = getattr(student.student, 'learning_style', 'Not set')
+            mastery_level = getattr(student.student, 'mastery_level', 'Not set')
+        
+        student_data = {
+            'student_id': student.id,
+            'first_name': student.first_name,
+            'last_name': student.last_name,
+            'email': student.email,
+            'progress': round(progress_percentage, 2),
+            'avg_score': round(progress['avg_score'] or 0, 2),
+            'completed_topics': progress['completed_topics'],
+            'total_topics': total_topics,
+            'last_active': last_activity.last_accessed.strftime('%Y-%m-%d %H:%M') if last_activity else 'Never',
+            'learning_style': learning_style,
+            'mastery_level': mastery_level
+        }
+        
+        return JsonResponse({
+            'success': True,
+            'student': student_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to fetch student details: {str(e)}'
+        }, status=500)
+        
+        
+@require_POST
+@staff_member_required
+@csrf_protect
+def delete_module(request, module_id):
+    """Delete a course module"""
+    try:
+        module = get_object_or_404(Module, id=module_id)
+        module_title = module.title
+        module.delete()
+        
+        return JsonResponse({
+            'success': True,
+            'message': f'Module "{module_title}" deleted successfully'
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to delete module: {str(e)}'
+        }, status=500)
+
+@staff_member_required
+def performance_distribution(request):
+    """Get performance distribution data for charts"""
+    try:
+        # Get performance distribution (students by progress range)
+        progress_ranges = [
+            ('0-20%', Q(course_progress__completion_percentage__gte=0, course_progress__completion_percentage__lte=20)),
+            ('21-40%', Q(course_progress__completion_percentage__gte=21, course_progress__completion_percentage__lte=40)),
+            ('41-60%', Q(course_progress__completion_percentage__gte=41, course_progress__completion_percentage__lte=60)),
+            ('61-80%', Q(course_progress__completion_percentage__gte=61, course_progress__completion_percentage__lte=80)),
+            ('81-100%', Q(course_progress__completion_percentage__gte=81, course_progress__completion_percentage__lte=100))
+        ]
+        
+        performance_data = []
+        for label, query in progress_ranges:
+            count = User.objects.filter(is_staff=False).filter(query).distinct().count()
+            performance_data.append(count)
+        
+        return JsonResponse({
+            'success': True,
+            'labels': [label for label, _ in progress_ranges],
+            'data': performance_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to fetch performance data: {str(e)}'
+        }, status=500)
+
+@staff_member_required
+def learning_style_distribution(request):
+    """Get learning style distribution data for charts"""
+    try:
+        # This assumes you have a Student model with learning_style field
+        from users.models import Student
+        learning_styles = Student.objects.values('learning_style').annotate(
+            count=Count('learning_style')
+        ).order_by('learning_style')
+        
+        labels = []
+        data = []
+        
+        for style in learning_styles:
+            if style['learning_style']:  # Ensure not empty
+                labels.append(style['learning_style'].title())
+                data.append(style['count'])
+        
+        return JsonResponse({
+            'success': True,
+            'labels': labels,
+            'data': data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to fetch learning style data: {str(e)}'
+        }, status=500)
+
+@staff_member_required
+def completion_over_time(request):
+    """Get course completion over time data for charts"""
+    try:
+        # Get data for the last 12 months
+        months = []
+        completion_rates = []
+        
+        for i in range(11, -1, -1):
+            month = timezone.now() - timedelta(days=30*i)
+            month_str = month.strftime('%b %Y')
+            months.append(month_str)
+            
+            # Calculate average completion for this month
+            start_date = month.replace(day=1)
+            if i == 11:
+                end_date = timezone.now()
+            else:
+                next_month = start_date + timedelta(days=32)
+                end_date = next_month.replace(day=1) - timedelta(days=1)
+            
+            # Calculate completion for this period
+            completions = CourseProgress.objects.filter(
+                last_accessed__gte=start_date,
+                last_accessed__lte=end_date
+            ).aggregate(avg_completion=Avg('completion_percentage'))['avg_completion'] or 0
+            
+            completion_rates.append(min(completions, 100))  # Cap at 100%
+        
+        return JsonResponse({
+            'success': True,
+            'labels': months,
+            'data': completion_rates
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to fetch completion data: {str(e)}'
+        }, status=500)
+
+@staff_member_required
+def quiz_performance(request):
+    """Get quiz performance by module data for charts"""
+    try:
+        # Get quiz performance by module
+        modules = Module.objects.all()
+        
+        labels = []
+        scores = []
+        
+        for module in modules:
+            # Calculate average score for this module
+            # This is a simplified example - you might need to adjust based on your data
+            avg_score = 60 + (module.id * 5)
+            if avg_score > 100:
+                avg_score = 100 - (module.id * 2)
+                
+            labels.append(module.title)
+            scores.append(avg_score)
+        
+        return JsonResponse({
+            'success': True,
+            'labels': labels,
+            'data': scores
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to fetch quiz performance data: {str(e)}'
+        }, status=500)
+
+from decimal import Decimal
+from decimal import ROUND_HALF_UP
+@staff_member_required
+def top_performers(request):
+    """Get top performing students"""
+    try:
+        # Get top 10 students by average score
+        top_performers = User.objects.filter(is_staff=False).annotate(
+            avg_score=Coalesce(Avg('generatedtopiccompletion__score'), 0.0),
+            completed_topics=Count('generatedtopiccompletion'),
+            total_topics=GeneratedTopic.objects.count()
+        ).order_by('-avg_score')[:10]
+        
+        performers_data = []
+        for i, student in enumerate(top_performers):
+            completion_percentage = Decimal(student.completed_topics) / (Decimal(student.total_topics) * 100) if student.total_topics > 0 else 0
+            
+            performers_data.append({
+                'rank': i + 1,
+                'first_name': student.first_name,
+                'last_name': student.last_name,
+                'avg_score': Decimal(student.avg_score).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP),
+                'completion': completion_percentage.quantize(Decimal('0.00'), rounding=ROUND_HALF_UP),
+                'time_spent': (Decimal(student.completed_topics * 30) / Decimal(60)).quantize(Decimal('0.00'), rounding=ROUND_HALF_UP),  # hours
+                'learning_style': getattr(student.student, 'learning_style', 'Not set').title() if hasattr(student, 'student') else 'Not set'
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'top_performers': performers_data
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to fetch top performers: {str(e)}'
+        }, status=500)
 
 from django.conf import settings
 from django.contrib import messages
@@ -160,3 +478,136 @@ def admin_login_view(request):
                 messages.error(request, 'Account temporarily locked due to too many failed login attempts.')
     
     return render(request, 'admin_login.html')
+
+@staff_member_required
+def add_student(request):
+    """Adds a new student account"""
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        first_name = request.POST.get('first_name')
+        last_name = request.POST.get('last_name')
+        password = request.POST.get('password')
+        
+        if not all([email, password, first_name, last_name]):
+            messages.error(request, "All fields are required.")
+            return JsonResponse({'success': False, 'error': 'All fields are required'}, status=400)
+
+        if User.objects.filter(email=email).exists():
+            messages.error(request, "A user with this email already exists.")
+            return JsonResponse({'success': False, 'error': 'A user with this email already exists'}, status=400)
+
+        try:
+            user = User.objects.create_user(
+                email=email,
+                password=password,
+                first_name=first_name,
+                last_name=last_name
+            )
+            user.is_active = True
+            user.save()
+            
+            return JsonResponse({'success': True, 'message': 'Student added successfully'})
+        except Exception as e:
+            
+            return JsonResponse({'success': False, 'error': str(e)}, status=500)
+    
+    return JsonResponse({'success': False, 'error': 'Invalid request method'}, status=405)
+
+@staff_member_required
+def student_quizzes(request, student_id):
+    completions = GeneratedTopicCompletion.objects.filter(student_id=student_id).select_related('topic', 'topic__quiz').order_by('-completed_at')
+    quizzes_data = []
+    for comp in completions:
+        quiz = getattr(comp.topic, 'quiz', None)
+        if quiz:
+            quizzes_data.append({
+                'title': quiz.topic.title,
+                'score': comp.score or 0,
+                'completed': True,
+                'date_attempted': comp.completed_at.strftime("%Y-%m-%d %H:%M")
+            })
+    return JsonResponse({'quizzes': quizzes_data})
+
+
+# Add to views.py
+@staff_member_required
+def student_progress_details(request, student_id):
+    """Get detailed progress information for a student"""
+    try:
+        student = get_object_or_404(User, id=student_id, is_staff=False)
+        
+        # Get regular course progress
+        regular_progress = []
+        courses = Course.objects.all()
+        for course in courses:
+            completed_lessons = UserProgress.objects.filter(
+                student=student,
+                lesson__module__course=course,
+                is_completed=True
+            ).count()
+            total_lessons = sum(module.lessons.count() for module in course.modules.all())
+            progress_percentage = int((completed_lessons / total_lessons) * 100) if total_lessons > 0 else 0
+            
+            regular_progress.append({
+                'course': course.title,
+                'completed': completed_lessons,
+                'total': total_lessons,
+                'progress': progress_percentage
+            })
+        
+        # Get generated course progress
+        generated_progress = []
+        generated_courses = GeneratedCourse.objects.filter(user=student)
+        for course in generated_courses:
+            completed_topics = GeneratedTopicCompletion.objects.filter(
+                student=student,
+                topic__chapter__course=course
+            ).count()
+            total_topics = GeneratedTopic.objects.filter(chapter__course=course).count()
+            progress_percentage = int((completed_topics / total_topics) * 100) if total_topics > 0 else 0
+            
+            # Get average quiz score
+            avg_score = GeneratedTopicCompletion.objects.filter(
+                student=student,
+                topic__chapter__course=course
+            ).aggregate(Avg('score'))['score__avg'] or 0
+            
+            generated_progress.append({
+                'course': course.title,
+                'completed': completed_topics,
+                'total': total_topics,
+                'progress': progress_percentage,
+                'avg_score': round(avg_score, 1)
+            })
+        
+        # Get quiz performance
+        quiz_performance = []
+        quiz_completions = GeneratedTopicCompletion.objects.filter(
+            student=student
+        ).select_related('topic', 'topic__chapter', 'topic__chapter__course')
+        
+        for completion in quiz_completions:
+            quiz_performance.append({
+                'course': completion.topic.chapter.course.title,
+                'topic': completion.topic.title,
+                'score': completion.score,
+                'completed_at': completion.completed_at.strftime('%Y-%m-%d %H:%M') if completion.completed_at else 'N/A'
+            })
+        
+        return JsonResponse({
+            'success': True,
+            'student': {
+                'id': student.id,
+                'name': f"{student.first_name} {student.last_name}",
+                'email': student.email
+            },
+            'regular_progress': regular_progress,
+            'generated_progress': generated_progress,
+            'quiz_performance': quiz_performance
+        })
+        
+    except Exception as e:
+        return JsonResponse({
+            'success': False,
+            'error': f'Failed to fetch student progress: {str(e)}'
+        }, status=500)

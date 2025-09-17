@@ -1003,6 +1003,52 @@
       border: 1px solid #fecaca;
       display: block;
     }
+
+    .quiz-container {
+    background: linear-gradient(to right, #f8f9fa, #e9ecef);
+    border-radius: 10px;
+    padding: 25px;
+    margin: 30px 0;
+    border-left: 4px solid #0d6efd;
+}
+
+.form-check {
+    margin-bottom: 10px;
+}
+
+.form-check-input:checked {
+    background-color: #0d6efd;
+    border-color: #0d6efd;
+}
+
+.spinner-border-sm {
+    width: 1rem;
+    height: 1rem;
+}
+
+.alert {
+    padding: 15px;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.alert-success {
+    background-color: #d1e7dd;
+    border-color: #badbcc;
+    color: #0f5132;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-color: #ffecb5;
+    color: #664d03;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-color: #f5c2c7;
+    color: #842029;
+}
     </style>
 </head>
 <body>
@@ -1104,29 +1150,31 @@
    {% if is_generated %}
     <div class="generated-content">{{ lesson.content|markdown }}</div>
             {% if is_generated and lesson.quiz %}
-                <div id="quiz-section" class="quiz-container mb-4 p-4 rounded shadow-sm">
-                    <h3 class="text-primary-dark font-montserrat font-bold">Quiz</h3>
-                    <form id="quiz-form" data-topic-id="{{ lesson.id }}">
-                        {% csrf_token %}
-                        {% for question in quiz_questions %}
-                            <div class="quiz-question mb-3" data-question-id="{{ question.id }}">
-                                <p class="font-poppins font-medium">{{ forloop.counter }}. {{ question.question_text }}</p>
-                                <div class="options mt-2">
-                                    {% for answer in question.answers.all %}
-                                        <div class="form-check">
-                                            <input class="form-check-input" type="radio" name="question-{{ question.id }}" id="answer-{{ answer.id }}" value="{{ answer.option_key }}">
-                                            <label class="form-check-label" for="answer-{{ answer.id }}">
-                                                {{ answer.answer_text }}
-                                            </label>
-                                        </div>
-                                    {% endfor %}
-                                </div>
-                            </div>
-                        {% endfor %}
-                        <button type="submit" class="btn btn-primary mt-3">Submit Quiz</button>
-                    </form>
+<div id="quiz-section" class="quiz-container mb-4 p-4 rounded shadow-sm">
+    <h3 class="text-primary-dark font-montserrat font-bold">Quiz</h3>
+    <form id="quiz-form" data-topic-id="{{ lesson.id }}">
+        {% csrf_token %}
+        {% for question in quiz_questions %}
+            <div class="quiz-question mb-3" data-question-id="{{ question.id }}">
+                <p class="font-poppins font-medium">{{ forloop.counter }}. {{ question.question_text }}</p>
+                <div class="options mt-2">
+                    {% for answer in question.answers.all %}
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="question-{{ question.id }}" 
+                                   id="answer-{{ answer.id }}" value="{{ answer.option_key }}" required>
+                            <label class="form-check-label" for="answer-{{ answer.id }}">
+                                {{ answer.answer_text }}
+                            </label>
+                        </div>
+                    {% endfor %}
                 </div>
-            {% endif %}
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary mt-3" id="quiz-submit-btn">Submit Quiz</button>
+    </form>
+    <div id="quiz-feedback" class="mt-3" style="display: none;"></div>
+</div>
+{% endif %}
 
 {% else %}
     {{ lesson.content|safe }}
@@ -1146,10 +1194,17 @@
     {% endif %}
 
     {% if next_lesson %}
+        {# Check if current topic is completed and passed #}
         {% if is_generated %}
-            <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ next_lesson.id }}" class="nav-btn">
-                Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
-            </a>
+            {% if topic_completed %}
+                <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ next_lesson.id }}" class="nav-btn">
+                    Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
+                </a>
+            {% else %}
+                <button class="nav-btn" disabled title="Complete current lesson with a passing grade to proceed">
+                    Next: {{ next_lesson.title }} <i class="fas fa-lock"></i>
+                </button>
+            {% endif %}
         {% else %}
             <a href="{% url 'learning' lesson_id=next_lesson.id %}" class="nav-btn">
                 Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
@@ -1159,23 +1214,212 @@
 </div>
 
            <div class="completion-section" style="margin: 40px 0; text-align: center;">
-    {% if is_generated %}
-        <form method="post" action="{% url 'complete_generated_topic' topic_id=lesson.id %}" onsubmit="return validateQuiz(event);">
-            {% csrf_token %}
-            <button type="submit" class="nav-btn complete-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
-                <i class="fas fa-check-circle"></i> Mark Topic as Completed
-            </button>
-        </form>
-    {% else %}
-        <form method="post" action="{% url 'complete_lesson' lesson_id=lesson.id %}">
-            {% csrf_token %}
-            <button type="submit" class="nav-btn complete-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
-                <i class="fas fa-check-circle"></i> Mark Lesson as Completed
-            </button>
-        </form>
-    {% endif %}
+                {% if is_generated %}
+                {% else %}
+                    <form method="post" action="{% url 'complete_lesson' lesson_id=lesson.id %}">
+                        {% csrf_token %}
+                        <button type="submit" class="nav-btn complete-btn" style="background: linear-gradient(135deg, #4caf50, #45a049);">
+                            <i class="fas fa-check-circle"></i> Mark Lesson as Completed
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+            <!-- Add this to your learning.html template -->
+<div id="quiz-results" style="display: none;">
+    <div class="quiz-feedback" id="quiz-feedback"></div>
+    
+    <div id="remedial-resources" class="mt-4" style="display: none;">
+        <h4>Recommended Resources to Improve Your Understanding:</h4>
+        <div class="resource-list" id="resource-list"></div>
+    </div>
+    
+    <div id="alternative-content" class="mt-4" style="display: none;">
+        <h4>Simplified Explanation:</h4>
+        <div class="simplified-content" id="simplified-content"></div>
+    </div>
+    
+    <div class="action-buttons mt-4">
+        <button id="retry-quiz" class="btn btn-primary" style="display: none;">
+            <i class="fas fa-redo"></i> Retry Quiz
+        </button>
+        <a id="next-topic-btn" class="btn btn-success" style="display: none;">
+            Continue to Next Topic <i class="fas fa-arrow-right"></i>
+        </a>
+    </div>
 </div>
+
+<script>
+// Update the validateQuiz function to handle the new response format
+// Update the validateQuiz function to handle regeneration
+async function validateQuiz() {
+    const quizForm = document.getElementById('quiz-form');
+    const topicId = quizForm.dataset.topicId;
+    const submitBtn = document.getElementById('quiz-submit-btn');
+    const feedbackDiv = document.getElementById('quiz-feedback');
+    const resultsDiv = document.getElementById('quiz-results');
+    
+    // Collect answers
+    const userAnswers = {};
+    let allAnswered = true;
+    
+    document.querySelectorAll('.quiz-question').forEach(questionDiv => {
+        const questionId = questionDiv.dataset.questionId;
+        const selectedOption = questionDiv.querySelector('input:checked');
+        
+        if (selectedOption) {
+            userAnswers[questionId] = selectedOption.value;
+        } else {
+            allAnswered = false;
+            questionDiv.style.border = "2px solid #ff6b6b";
+        }
+    });
+    
+    if (!allAnswered) {
+        feedbackDiv.innerHTML = '<div class="alert alert-warning">Please answer all questions before submitting.</div>';
+        feedbackDiv.style.display = 'block';
+        return;
+    }
+    
+    // Disable submit button to prevent multiple submissions
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
+    
+    try {
+        const response = await fetch('/api/complete-generated-topic/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                topic_id: parseInt(topicId),
+                answers: userAnswers,
+                is_retry: window.isRetryAttempt || false // Track if this is a retry
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show results section
+            resultsDiv.style.display = 'block';
+            
+            // Display feedback based on pass/fail status
+            if (data.passed) {
+                feedbackDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <h4>Congratulations! You passed with ${data.score}%</h4>
+                        <p>${data.ai_feedback}</p>
+                    </div>
+                `;
+                
+                // Show next topic button after a delay
+                setTimeout(() => {
+                    if (data.next_topic_id) {
+                        const nextBtn = document.createElement('a');
+                        nextBtn.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.next_topic_id}`;
+                        nextBtn.className = 'btn btn-primary mt-3';
+                        nextBtn.innerHTML = 'Continue to Next Topic <i class="fas fa-arrow-right"></i>';
+                        feedbackDiv.appendChild(nextBtn);
+                    } else {
+                        const completeBtn = document.createElement('a');
+                        completeBtn.href = '/dashboard';
+                        completeBtn.className = 'btn btn-success mt-3';
+                        completeBtn.innerHTML = 'Course Completed! Return to Dashboard';
+                        feedbackDiv.appendChild(completeBtn);
+                    }
+                }, 3000);
+            } else {
+                // Student failed - check if a regenerated topic was created
+                let retryHtml = '';
+                if (data.regenerated_topic_id) {
+                    retryHtml = `
+                        <div class="mt-3">
+                            <p>We've created a simpler version of this topic to help you understand the concepts better.</p>
+                            <button class="btn btn-primary" onclick="retryWithSimplifiedTopic(${data.regenerated_topic_id})">
+                                <i class="fas fa-graduation-cap me-2"></i>Try Simplified Lesson
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    retryHtml = `
+                        <div class="mt-3">
+                            <button class="btn btn-primary" onclick="retryQuiz()">
+                                <i class="fas fa-redo me-2"></i>Retry Quiz
+                            </button>
+                        </div>
+                    `;
+                }
+                
+                // Show remedial resources
+                let resourcesHtml = '';
+                if (data.remedial_resources && data.remedial_resources.length > 0) {
+                    resourcesHtml = `
+                        <div class="mt-4">
+                            <h5>Recommended Resources to Improve Your Understanding:</h5>
+                            <ul class="list-group">
+                                ${data.remedial_resources.map(resource => `
+                                    <li class="list-group-item">
+                                        <a href="${resource.url}" target="_blank" class="text-primary">
+                                            <i class="fas fa-external-link-alt me-2"></i>${resource.title}
+                                        </a>
+                                        <small class="text-muted d-block">${resource.type.replace('_', ' ')}</small>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                feedbackDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <h4>You scored ${data.score}% - Review Needed</h4>
+                        <p>${data.ai_feedback}</p>
+                        <p class="mt-3">You need to score at least 50% to proceed to the next lesson.</p>
+                        ${resourcesHtml}
+                        ${retryHtml}
+                    </div>
+                `;
+            }
+            feedbackDiv.style.display = 'block';
+            
+        } else {
+            feedbackDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+            feedbackDiv.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit Quiz';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        feedbackDiv.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again.</div>';
+        feedbackDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Submit Quiz';
+    }
+}
+
+// Function to retry with a simplified topic
+function retryWithSimplifiedTopic(topicId) {
+    // Set flag to indicate this is a retry attempt
+    window.isRetryAttempt = true;
+    
+    // Redirect to the simplified topic
+    const url = new URL(window.location.href);
+    url.searchParams.set('topic_id', topicId);
+    window.location.href = url.toString();
+}
+
+// Function to retry the same quiz
+function retryQuiz() {
+    // Set flag to indicate this is a retry attempt
+    window.isRetryAttempt = true;
+    
+    // Reload the page to retry the same quiz
+    window.location.reload();
+}
+</script>
         </main>
+
     </div>
 
     <!-- Footer -->
@@ -1226,87 +1470,161 @@
             }
         });
 
-    document.addEventListener('DOMContentLoaded', function() {
-        const quizForm = document.getElementById('quiz-form');
-        if (quizForm) {
-            quizForm.addEventListener('submit', function(event) {
-                validateQuiz(event);
-            });
+    // Quiz functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const quizForm = document.getElementById('quiz-form');
+    if (quizForm) {
+        quizForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            validateQuiz();
+        });
+    }
+});
+
+// Update the validateQuiz function
+async function validateQuiz() {
+    const quizForm = document.getElementById('quiz-form');
+    const topicId = quizForm.dataset.topicId;
+    const submitBtn = document.getElementById('quiz-submit-btn');
+    const feedbackDiv = document.getElementById('quiz-feedback');
+    
+    // Collect answers
+    const userAnswers = {};
+    let allAnswered = true;
+    
+    document.querySelectorAll('.quiz-question').forEach(questionDiv => {
+        const questionId = questionDiv.dataset.questionId;
+        const selectedOption = questionDiv.querySelector('input:checked');
+        
+        if (selectedOption) {
+            userAnswers[questionId] = selectedOption.value;
+        } else {
+            allAnswered = false;
+            questionDiv.style.border = "2px solid #ff6b6b";
         }
     });
-
-    function getCookie(name) {
-        let cookieValue = null;
-        if (document.cookie && document.cookie !== '') {
-            const cookies = document.cookie.split(';');
-            for (let i = 0; i < cookies.length; i++) {
-                const cookie = cookies[i].trim();
-                if (cookie.startsWith(name + '=')) {
-                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                    break;
-                }
-            }
-        }
-        return cookieValue;
+    
+    if (!allAnswered) {
+        feedbackDiv.innerHTML = '<div class="alert alert-warning">Please answer all questions before submitting.</div>';
+        feedbackDiv.style.display = 'block';
+        return;
     }
-
-    async function validateQuiz(event) {
-        event.preventDefault();
-
-        const questions = document.querySelectorAll('.quiz-question');
-        const userAnswers = {};
-        const topicId = document.getElementById('quiz-form').dataset.topicId;
-        let unanswered = false;
-
-        questions.forEach(questionDiv => {
-            const questionId = questionDiv.dataset.questionId;
-            const selectedOption = questionDiv.querySelector('input:checked');
-            
-            if (selectedOption) {
-                userAnswers[questionId] = selectedOption.value;
-            } else {
-                unanswered = true;
-            }
+    
+    // Disable submit button to prevent multiple submissions
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
+    
+    try {
+        const response = await fetch('/api/complete-generated-topic/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify({
+                topic_id: parseInt(topicId),
+                answers: userAnswers
+            })
         });
-
-        if (unanswered) {
-            alert('Please answer all questions before submitting.');
-            return;
-        }
-
-        try {
-            // CORRECTED URL: Added leading '/' to make it an absolute path
-            const response = await fetch(`/api/complete-generated-topic/${topicId}/`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': getCookie('csrftoken'),
-                },
-                body: JSON.stringify({
-                    topic_id: topicId,
-                    answers: userAnswers
-                })
-            });
-            
-            const data = await response.json();
-
-            if (data.success) {
-                alert(data.ai_feedback);
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Display feedback based on pass/fail status
+            if (data.passed) {
+                feedbackDiv.innerHTML = `
+                    <div class="alert alert-success">
+                        <h4>Congratulations! You passed with ${data.score}%</h4>
+                        <p>${data.ai_feedback}</p>
+                    </div>
+                `;
                 
-                if (data.next_topic_id) {
-                    window.location.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.next_topic_id}`;
-                } else {
-                    alert('Congratulations, you have completed the course!');
-                    window.location.href = '/dashboard';
-                }
+                // Update progress UI
+                document.querySelector('.progress-fill').style.width = `${data.course_progress}%`;
+                document.querySelector('.progress-text').textContent = `${data.course_progress}% Complete`;
+                
+                // Show next topic button after a delay
+                setTimeout(() => {
+                    if (data.next_topic_id) {
+                        const nextBtn = document.createElement('a');
+                        nextBtn.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.next_topic_id}`;
+                        nextBtn.className = 'btn btn-primary mt-3';
+                        nextBtn.innerHTML = 'Continue to Next Topic <i class="fas fa-arrow-right"></i>';
+                        feedbackDiv.appendChild(nextBtn);
+                    } else {
+                        const completeBtn = document.createElement('a');
+                        completeBtn.href = '/dashboard';
+                        completeBtn.className = 'btn btn-success mt-3';
+                        completeBtn.innerHTML = 'Course Completed! Return to Dashboard';
+                        feedbackDiv.appendChild(completeBtn);
+                    }
+                }, 3000);
             } else {
-                alert('Error submitting quiz: ' + data.error);
+                // Student failed - show remedial resources
+                let resourcesHtml = '';
+                if (data.remedial_resources && data.remedial_resources.length > 0) {
+                    resourcesHtml = `
+                        <div class="mt-4">
+                            <h5>Recommended Resources to Improve Your Understanding:</h5>
+                            <ul class="list-group">
+                                ${data.remedial_resources.map(resource => `
+                                    <li class="list-group-item">
+                                        <a href="${resource.url}" target="_blank" class="text-primary">
+                                            <i class="fas fa-external-link-alt me-2"></i>${resource.title}
+                                        </a>
+                                        <small class="text-muted d-block">${resource.type.replace('_', ' ')}</small>
+                                    </li>
+                                `).join('')}
+                            </ul>
+                        </div>
+                    `;
+                }
+                
+                feedbackDiv.innerHTML = `
+                    <div class="alert alert-warning">
+                        <h4>You scored ${data.score}% - Review Needed</h4>
+                        <p>${data.ai_feedback}</p>
+                        <p class="mt-3">You need to score at least 50% to proceed to the next lesson.</p>
+                        ${resourcesHtml}
+                        <div class="mt-3">
+                            <button class="btn btn-primary" onclick="location.reload()">
+                                <i class="fas fa-redo me-2"></i>Retry Quiz
+                            </button>
+                        </div>
+                    </div>
+                `;
             }
-        } catch (error) {
-            alert('An error occurred. Please try again.');
-            console.error('Error:', error);
+            feedbackDiv.style.display = 'block';
+            
+        } else {
+            feedbackDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
+            feedbackDiv.style.display = 'block';
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = 'Submit Quiz';
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        feedbackDiv.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again.</div>';
+        feedbackDiv.style.display = 'block';
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = 'Submit Quiz';
+    }
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
         }
     }
+    return cookieValue;
+}
 
 </script>
 
