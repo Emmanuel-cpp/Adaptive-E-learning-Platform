@@ -17,7 +17,6 @@ import google.generativeai as genai
 import re
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import logging
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -130,7 +129,7 @@ def learning_view(request, lesson_id=None):
             
             # Check if this is a regenerated topic and get the original if needed
             original_topic = None
-            if topic.is_regenerated and topic.original_topic:
+            if hasattr(topic, 'is_regenerated') and topic.is_regenerated and hasattr(topic, 'original_topic') and topic.original_topic:
                 original_topic = topic.original_topic
             
             # Check if topic is completed
@@ -188,15 +187,18 @@ def learning_view(request, lesson_id=None):
                 'is_generated': True,
                 'quiz_questions': quiz_questions,
                 'topic_completed': topic_completed,
+                'is_regenerated': topic.is_regenerated if hasattr(topic, 'is_regenerated') else False,
             })
             
         except (GeneratedCourse.DoesNotExist, GeneratedTopic.DoesNotExist):
             raise Http404("Course or topic not found")
         except Exception as e:
-            logger.error(f"Error in learning_view: {str(e)}")
+            # Log the error and return a user-friendly message
+            logger.error(f"Error in learning_view (generated course): {str(e)}")
             return render(request, 'error.html', {
                 'error_message': 'An error occurred while loading the lesson. Please try again.'
-            })    
+            })
+    
     # === Regular lessons ===
     try:
         if lesson_id:
@@ -260,13 +262,12 @@ def learning_view(request, lesson_id=None):
             'next_lesson': next_lesson,
             'is_generated': False,
             'topic_completed': False,  # Not applicable for regular lessons
+            'is_regenerated': False,   # Not applicable for regular lessons
         })
         
     except Exception as e:
         # Log the error and return a user-friendly message
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error in learning_view: {str(e)}")
+        logger.error(f"Error in learning_view (regular lesson): {str(e)}")
         return render(request, 'error.html', {
             'error_message': 'An error occurred while loading the lesson. Please try again.'
         })
@@ -729,7 +730,6 @@ def complete_generated_topic(request, topic_id=None):
         data = json.loads(request.body)
         topic_id = data.get('topic_id')
         user_answers = data.get('answers', {})
-        is_retry = data.get('is_retry', False)  # Flag to indicate if this is a retry attempt
 
         if not topic_id:
             return JsonResponse({'success': False, 'error': 'Topic ID is required.'}, status=400)
@@ -752,7 +752,7 @@ def complete_generated_topic(request, topic_id=None):
                     if user_selected_option == correct_answer.option_key:
                         correct_answers_count += 1
                     else:
-                        # Add wrong answer details
+                        # Add wrong answer details - use consistent field names
                         wrong_answers.append({
                             'question': question.question_text,
                             'user_answer': user_selected_option,
@@ -767,21 +767,25 @@ def complete_generated_topic(request, topic_id=None):
         # Check if student passed (50% or higher)
         passed = score_percentage >= 50
         
-        # If this is a retry attempt and the student still failed, regenerate a simpler topic
-        regenerated_topic = None
-        if is_retry and not passed and score_percentage < 50:
-            regenerated_topic = regenerate_simpler_topic(topic, student, score_percentage, wrong_answers)
-        
-        # Update or create completion record with score and pass status
-        completion, created = GeneratedTopicCompletion.objects.update_or_create(
-            student=student,
-            topic=topic,
-            defaults={
-                'score': score_percentage,
-                'passed': passed,
-                'attempt_count': models.F('attempt_count') + 1  # Increment attempt count
-            }
-        )
+        # First, try to get the existing completion record
+        try:
+            completion = GeneratedTopicCompletion.objects.get(student=student, topic=topic)
+            # If it exists, update it
+            completion.score = score_percentage
+            completion.passed = passed
+            completion.wrong_answers = wrong_answers
+            completion.attempt_count += 1  # Manually increment the attempt count
+            completion.save()
+        except GeneratedTopicCompletion.DoesNotExist:
+            # If it doesn't exist, create a new one
+            completion = GeneratedTopicCompletion.objects.create(
+                student=student,
+                topic=topic,
+                score=score_percentage,
+                passed=passed,
+                wrong_answers=wrong_answers,
+                attempt_count=1  # Start with 1 for new records
+            )
         
         # Update overall course progress (only count passed topics)
         total_topics = GeneratedTopic.objects.filter(chapter__course=course).count()
@@ -814,11 +818,6 @@ def complete_generated_topic(request, topic_id=None):
             'course_id': course.id,
         }
         
-        # If a simpler topic was regenerated, include its ID in the response
-        if regenerated_topic:
-            response_data['regenerated_topic_id'] = regenerated_topic.id
-            response_data['regenerated_topic_title'] = regenerated_topic.title
-            
         if next_topic:
             response_data['next_topic_id'] = next_topic.id
             
@@ -827,7 +826,6 @@ def complete_generated_topic(request, topic_id=None):
     except Exception as e:
         logger.error(f"Error in complete_generated_topic: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
-    
     
 def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_answers):
     """
@@ -850,13 +848,16 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
         if wrong_answers:
             difficulty_analysis = "The student specifically struggled with:\n"
             for i, wrong in enumerate(wrong_answers, 1):
-                difficulty_analysis += f"{i}. {wrong['question']}\n"
-                difficulty_analysis += f"   Their answer: {wrong['user_answer']}\n"
-                difficulty_analysis += f"   Correct answer: {wrong['correct_answer']}\n"
+                question_text = wrong.get('question', wrong.get('question_text', 'Unknown question'))
+                user_answer = wrong.get('user_answer', 'No answer')
+                correct_answer = wrong.get('correct_answer', wrong.get('correct_answer_text', 'Unknown answer'))
+                
+                difficulty_analysis += f"{i}. {question_text}\n"
+                difficulty_analysis += f"   Their answer: {user_answer}\n"
+                difficulty_analysis += f"   Correct answer: {correct_answer}\n"
         
         prompt = f"""
         Create a simpler version of the C++ topic "{original_topic.title}" for a student who scored {score_percentage}%.
-        The original content was: {original_topic.content[:500]}...
         
         {difficulty_analysis}
         
@@ -893,10 +894,26 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
         
         model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
-        topic_data = json.loads(response.text)
+        
+        # Try to parse the response
+        try:
+            topic_data = json.loads(response.text)
+        except json.JSONDecodeError:
+            # If it's not valid JSON, try to extract JSON from the response
+            import re
+            # Try to find JSON in the response
+            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+            if json_match:
+                try:
+                    topic_data = json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    logger.error(f"Could not parse extracted JSON: {json_match.group()}")
+                    return None
+            else:
+                logger.error(f"Could not extract JSON from AI response: {response.text}")
+                return None
         
         # Create a new chapter for the regenerated topic
-        # We'll place it after the original chapter
         original_chapter = original_topic.chapter
         new_chapter_order = original_chapter.order + 0.1  # Place it right after the original
         
@@ -910,7 +927,6 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
             regenerated_chapter = GeneratedChapter.objects.create(
                 course=original_chapter.course,
                 title=f"Reinforcement: {original_chapter.title}",
-                description=f"Simplified versions of topics from {original_chapter.title}",
                 order=new_chapter_order
             )
         
@@ -919,7 +935,6 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
             chapter=regenerated_chapter,
             title=topic_data.get('title', f"Simplified: {original_topic.title}"),
             content=topic_data.get('content', ''),
-            description=f"Simplified version of {original_topic.title}",
             order=0,
             is_regenerated=True,
             original_topic=original_topic
@@ -944,14 +959,14 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
                         order=a_idx
                     )
         
-        # Log the regeneration
-        logger.info(f"Regenerated topic {original_topic.id} for student {student.id} with score {score_percentage}%")
+        # Log the regeneration - FIXED: Use student.pk instead of student.id
+        logger.info(f"Regenerated topic {original_topic.id} for student {student.pk} with score {score_percentage}%")
         
         return regenerated_topic
         
     except Exception as e:
         logger.error(f"Error regenerating topic: {str(e)}")
-        return None    
+        return None
 
 def get_or_generate_next_topic(course, current_topic, student, score):
     """
@@ -1265,12 +1280,17 @@ def get_cpp_remedial_resources(topic_name, score_percentage, wrong_answers=None)
         if wrong_answers:
             wrong_answers_context = "\n\nThe student specifically struggled with these questions:\n"
             for i, wrong in enumerate(wrong_answers, 1):
-                wrong_answers_context += f"{i}. Question: {wrong['question']}\n"
-                wrong_answers_context += f"   Their answer: {wrong['user_answer']}\n"
-                wrong_answers_context += f"   Correct answer: {wrong['correct_answer']} ({wrong['correct_answer_text']})\n"
+                # Make sure we're using the correct field names
+                question_text = wrong.get('question', wrong.get('question_text', 'Unknown question'))
+                user_answer = wrong.get('user_answer', 'No answer')
+                correct_answer = wrong.get('correct_answer', wrong.get('correct_answer_text', 'Unknown answer'))
+                
+                wrong_answers_context += f"{i}. Question: {question_text}\n"
+                wrong_answers_context += f"   Their answer: {user_answer}\n"
+                wrong_answers_context += f"   Correct answer: {correct_answer}\n"
         
         prompt = f"""
-        A student is learning C++ and just scored {score_percentage}% on a quiz about "{topic_name}".{wrong_answers_context}
+        A student scored {score_percentage}% on a C++ quiz about "{topic_name}".{wrong_answers_context}
         
         They need additional learning resources to improve their understanding, particularly focusing on the areas where they struggled.
         
@@ -1302,7 +1322,7 @@ def get_cpp_remedial_resources(topic_name, score_percentage, wrong_answers=None)
         ]
         """
         
-        model = genai.GenerativeModel('gemini-2.0-flash-lite', generation_config={"response_mime_type": "application/json"})
+        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
         
         # Parse the AI response
@@ -1494,3 +1514,72 @@ def generate_ai_feedback(topic, user_answers, score, passed, remedial_resources)
             return f"Great job! You scored {score}% and passed this quiz on {topic.title}."
         else:
             return f"You scored {score}% on {topic.title}. Review the material and try again. Recommended resources: {', '.join([r['title'] for r in remedial_resources])}"
+
+@require_POST
+@login_required
+@csrf_protect
+def regenerate_topic(request):
+    """API endpoint to regenerate a simpler version of a topic"""
+    try:
+        data = json.loads(request.body)
+        course_id = data.get('course_id')
+        topic_id = data.get('topic_id')
+        
+        if not course_id or not topic_id:
+            return JsonResponse({'success': False, 'error': 'Course ID and Topic ID are required.'}, status=400)
+            
+        course = get_object_or_404(GeneratedCourse, id=course_id, user=request.user)
+        topic = get_object_or_404(GeneratedTopic, id=topic_id, chapter__course=course)
+        
+        # Prevent regenerating from a regenerated topic
+        if topic.is_regenerated:
+            return JsonResponse({
+                'success': False, 
+                'error': 'Cannot generate a simplified lesson from an already simplified lesson.'
+            }, status=400)
+        
+        # Check if the student has already completed this topic
+        try:
+            completion = GeneratedTopicCompletion.objects.get(student=request.user, topic=topic)
+            score_percentage = completion.score
+        except GeneratedTopicCompletion.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'You must complete the topic first.'}, status=400)
+        
+        # Only allow regeneration if the student failed
+        if score_percentage >= 50:
+            return JsonResponse({'success': False, 'error': 'You passed this topic. Regeneration is only available if you failed.'}, status=400)
+        
+        # Check if a regenerated topic already exists for this student and original topic
+        existing_regenerated = GeneratedTopic.objects.filter(
+            original_topic=topic, 
+            chapter__course=course,
+            is_regenerated=True
+        ).first()
+        
+        if existing_regenerated:
+            return JsonResponse({
+                'success': True, 
+                'regenerated_topic_id': existing_regenerated.id,
+                'message': 'A simplified version already exists.'
+            })
+        
+        # Get wrong answers from the completion record if available
+        wrong_answers = []
+        if hasattr(completion, 'wrong_answers') and completion.wrong_answers:
+            wrong_answers = completion.wrong_answers
+        
+        # Regenerate a simpler topic
+        regenerated_topic = regenerate_simpler_topic(topic, request.user, score_percentage, wrong_answers)
+        
+        if regenerated_topic:
+            return JsonResponse({
+                'success': True, 
+                'regenerated_topic_id': regenerated_topic.id,
+                'message': 'Simplified topic generated successfully.'
+            })
+        else:
+            return JsonResponse({'success': False, 'error': 'Failed to generate simplified topic.'}, status=500)
+            
+    except Exception as e:
+        logger.error(f"Error in regenerate_topic: {str(e)}")
+        return JsonResponse({'success': False, 'error': 'Internal server error.'}, status=500)

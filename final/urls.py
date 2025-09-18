@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.urls import path
 from users.views import login_view, register_view, logout_view, index_view
 from adminPanel.views import admin_login_view
-from content.views import dashboard_view, learning_view, complete_lesson, update_lesson_time, course_detail,generate_course, complete_generated_topic, get_topic_data_api, complete_topic, learning_default, progress_analysis_view
+from content.views import dashboard_view, learning_view, complete_lesson, update_lesson_time, course_detail,generate_course, complete_generated_topic, get_topic_data_api, complete_topic, learning_default, progress_analysis_view, regenerate_topic
 from adminPanel.views import admin_dashboard
 from django.urls import include
 from adminPanel.views import delete_student, student_details, delete_module, performance_distribution, learning_style_distribution, completion_over_time, quiz_performance, top_performers, add_student, delete_student, student_quizzes, student_progress_details
@@ -53,5 +53,6 @@ urlpatterns = [
     path('admin/student-quizzes/<int:student_id>/', student_quizzes, name='student_quizzes'),
     path('admin/student-progress/<int:student_id>/', student_progress_details, name='student_progress_details'),
     path('test-api/', test_gemini_api, name='test_api'),
+    path('api/regenerate-topic/', regenerate_topic, name='regenerate_topic'),
     #path('admin-dashboard/', include('adminPanel.urls')),
 ]

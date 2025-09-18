@@ -197,6 +197,8 @@ class GeneratedTopicCompletion(models.Model):
     completed_at = models.DateTimeField(auto_now_add=True)
     score = models.FloatField(null=True, blank=True) 
     passed = models.BooleanField(default=False)
+    wrong_answers = models.JSONField(default=list, blank=True)  # Store wrong answers for regeneration
+    attempt_count = models.PositiveIntegerField(default=1) 
 
     class Meta:
         unique_together = ('student', 'topic')
