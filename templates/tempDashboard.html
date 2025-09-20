@@ -750,9 +750,32 @@
                 flex-direction: column;
             }
         }
+        #studentPagination button {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    background-color: #f9f9f9;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+#studentPagination button:hover:not(:disabled) {
+    background-color: #e9e9e9;
+}
+
+#studentPagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+#studentPagination button:not(:disabled):hover {
+    background-color: #2563eb;
+    color: white;
+}
+
+        
         
     </style>
-</head>
 <body>
     <!-- Header -->
     <header>
@@ -783,9 +806,6 @@
 
     <!-- Admin Layout -->
     <div class="admin-container">
-        <!-- Sidebar Overlay for Mobile -->
-        <div id="sidebar-overlay" class="sidebar-overlay"></div>
-
         <!-- Sidebar -->
         <aside class="admin-sidebar" id="sidebar">
             <div class="sidebar-header">
@@ -793,34 +813,17 @@
             </div>
             
             <ul class="sidebar-menu">
+                
                 <li class="menu-item">
-                    <a href="#" class="menu-link active" data-tab="dashboard">
-                        <span class="menu-icon"><i class="fas fa-tachometer-alt"></i></span>
-                        <span>Dashboard</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link" data-tab="user-management">
+                    <a href="#user-management" class="menu-link" data-tab="user-management">
                         <span class="menu-icon"><i class="fas fa-users"></i></span>
                         <span>User Management</span>
                     </a>
                 </li>
                 <li class="menu-item">
-                    <a href="#" class="menu-link" data-tab="course-management">
-                        <span class="menu-icon"><i class="fas fa-book"></i></span>
-                        <span>Course Management</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link" data-tab="analytics">
+                    <a href="#analytics" class="menu-link" data-tab="analytics">
                         <span class="menu-icon"><i class="fas fa-chart-bar"></i></span>
-                        <span>Analytics</span>
-                    </a>
-                </li>
-                <li class="menu-item">
-                    <a href="#" class="menu-link" data-tab="system">
-                        <span class="menu-icon"><i class="fas fa-cog"></i></span>
-                        <span>System Settings</span>
+                        <span>Top Performers</span>
                     </a>
                 </li>
             </ul>
@@ -828,6 +831,7 @@
 
         <!-- Main Content -->
         <main class="admin-main">
+
             <!-- Dashboard Tab -->
             <div id="dashboard" class="tab-content active">
                 <div class="welcome-banner">
@@ -840,874 +844,717 @@
                     <div class="dashboard-card">
                         <div class="card-header">
                             <h2 class="card-title">Total Students</h2>
-                            <div class="card-icon">
-                                <i class="fas fa-users"></i>
-                            </div>
+                            <div class="card-icon"><i class="fas fa-users"></i></div>
                         </div>
                         <div class="stat-number">{{ total_students }}</div>
                         <div class="stat-label">Enrolled in C++ Course</div>
-                        <div class="stat-trend trend-up">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>{{ new_students_this_week }} new this week</span>
-                        </div>
                     </div>
                     
-                    <div class="dashboard-card">
+                   <div class="dashboard-card">
                         <div class="card-header">
-                            <h2 class="card-title">Course Progress</h2>
-                            <div class="card-icon">
-                                <i class="fas fa-chart-line"></i>
-                            </div>
+                            <h2 class="card-title">Average Progress</h2>
+                            <div class="card-icon"><i class="fas fa-chart-line"></i></div>
                         </div>
                         <div class="progress-container">
                             <div class="progress-header">
-                                <span class="progress-label">Average Completion</span>
+                                <span class="progress-label">Overall Completion</span>
                                 <span class="progress-percent">{{ avg_progress }}%</span>
                             </div>
                             <div class="progress-bar">
                                 <div class="progress-fill" style="width: {{ avg_progress }}%"></div>
                             </div>
                         </div>
-                        <div class="stat-trend {% if progress_change >= 0 %}trend-up{% else %}trend-down{% endif %}">
-                            <i class="fas fa-arrow-{% if progress_change >= 0 %}up{% else %}down{% endif %}"></i>
-                            <span>{{ progress_change }}% from last week</span>
-                        </div>
+                        <div class="stat-label">{{ total_completed }} of {{ total_learning_items }} items completed</div>
                     </div>
-                    
                     
                     <div class="dashboard-card">
                         <div class="card-header">
-                            <h2 class="card-title">AI Courses</h2>
-                            <div class="card-icon">
-                                <i class="fas fa-robot"></i>
-                            </div>
+                            <h2 class="card-title">Topics</h2>
+                            <div class="card-icon"><i class="fas fa-robot"></i></div>
                         </div>
                         <div class="stat-number">{{ ai_courses_count }}</div>
-                        <div class="stat-label">Generated Courses</div>
-                        <div class="stat-trend trend-up">
-                            <i class="fas fa-arrow-up"></i>
-                            <span>{{ new_ai_courses }} this month</span>
-                        </div>
+                        <div class="stat-label">Generated Topics</div>
                     </div>
                 </div>
-                
-                
+            </div>
+
             <!-- User Management Tab -->
             <div id="user-management" class="tab-content">
                 <div class="welcome-banner">
                     <h1 class="welcome-title">User Management</h1>
-                    <p class="welcome-subtitle">Manage students, view progress, and perform administrative actions</p>
+                    <p class="welcome-subtitle">Overview of all students</p>
                 </div>
                 
-                <div class="table-container" style="padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-top: 20px;">
-    <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-        <h2 class="table-title" style="font-size: 20px; font-weight: 600; color: #333; margin: 0;">All Students</h2>
-        <div class="search-box" style="position: relative;">
-            <i class="fas fa-search" style="position: absolute; left: 10px; top: 50%; transform: translateY(-50%); color: #888;"></i>
-            <input type="text" class="search-input" id="studentSearch" placeholder="Search students..." 
-                style="padding: 8px 12px 8px 35px; border: 1px solid #ccc; border-radius: 8px; font-size: 14px; width: 220px;">
-        </div>
-    </div>
-    
-    <table class="table table-striped table-hover" style="width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden;">
-        <thead style="background: #007bff; color: #fff; font-size: 15px;">
-            <tr>
-                <th style="padding: 12px; text-align: left;">Student ID</th>
-                <th style="padding: 12px; text-align: left;">Student Name</th>
-                <th style="padding: 12px; text-align: left;">Progress</th>
-                <th style="padding: 12px; text-align: left;">Last Active</th>
-                <th style="padding: 12px; text-align: center;">Actions</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for student in student_progress %}
-            <tr style="border-bottom: 1px solid #eee; font-size: 14px;">
-                <td style="padding: 10px; font-weight: 600; color: #444;">{{ student.student_id }}</td>
-                <td style="padding: 10px; color: #333;">{{ student.first_name }} {{ student.last_name }}</td>
-                <td style="padding: 10px;">
-                    <div class="progress-bar" style="background: #f1f1f1; border-radius: 8px; height: 10px; width: 100%; overflow: hidden;">
-                        <div class="progress-fill" style="background: #28a745; height: 100%; border-radius: 8px; width: {{ student.progress_percentage|default:0 }}%;"></div>
-                    </div>
-                    <small style="color: #666;">{{ student.progress_percentage|default:0 }}% complete</small>
-                </td>
-                <td style="padding: 10px; color: #666;">
-                    {% if student.last_active %}
-                        {{ student.last_active|timesince }} ago
-                    {% else %}
-                        Never
-                    {% endif %}
-                </td>
-                <td style="padding: 10px; text-align: center;">
-                    <div class="action-buttons" style="display: flex; gap: 8px; justify-content: center;">
-                        <button class="btn btn-primary btn-sm view-student" data-id="{{ student.student_id }}" 
-                            style="padding: 5px 10px; font-size: 13px; border-radius: 6px; display: flex; align-items: center; gap: 5px;">
-                            <i class="fas fa-eye"></i> View
-                        </button>
-                        <button class="btn btn-danger btn-sm delete-student" data-id="{{ student.student_id }}" 
-                            style="padding: 5px 10px; font-size: 13px; border-radius: 6px; display: flex; align-items: center; gap: 5px;">
-                            <i class="fas fa-trash"></i> Delete
-                        </button>
-                    </div>
-                </td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" style="text-align: center; padding: 15px; color: #888;">No student data available</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
-
-    <button class="btn btn-primary" id="addStudentBtn">
-        <i class="fas fa-plus"></i> Add New Student
-    </button>
-
-                <!-- Student Performance Charts -->
-                <div class="dashboard-grid">
-                    <div class="chart-container">
-                        <div class="card-header">
-                            <h2 class="card-title">Performance Distribution</h2>
-                        </div>
-                        <canvas id="performanceChart" height="250"></canvas>
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2 class="table-title">All Students</h2>
+                        
                     </div>
                     
-                    <div class="chart-container">
-                        <div class="card-header">
-                            <h2 class="card-title">Learning Style Distribution</h2>
-                        </div>
-                        <canvas id="learningStyleChart" height="250"></canvas>
-                    </div>
+                <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left;">
+                    <thead>
+                        <tr style="background: #2563eb; color: white;">
+                            <th style="padding: 12px; border: 1px solid #ddd;">Student ID</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Student Name</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Progress</th>
+                            <th style="padding: 12px; border: 1px solid #ddd;">Last Active</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for student in student_progress %}
+                        <tr style="background: {% cycle '#f9fafb' 'white' %}; cursor: pointer;" 
+                            onmouseover="this.style.background='#e5e7eb'" 
+                            onmouseout="this.style.background='{% cycle '#f9fafb' 'white' %}'">
+                            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.student_id }}</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.first_name }} {{ student.last_name }}</td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">
+                                <div style="background:#e5e7eb; border-radius: 6px; height: 10px; width:100%;">
+                                    <div style="background:#2563eb; height:100%; width: {{ student.progress_percentage|default:0 }}%; border-radius: 6px;"></div>
+                                </div>
+                                <small>{{ student.progress_percentage|default:0 }}% complete</small>
+                            </td>
+                            <td style="padding: 12px; border: 1px solid #ddd;">
+                                {% if student.last_active %}
+                                    {{ student.last_active|timesince }} ago
+                                {% else %}
+                                    Never
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="4" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No student data available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
                 </div>
+                
             </div>
-
-            <!-- Analytics Tab -->
-            <div id="analytics" class="tab-content">
-                <div class="welcome-banner">
-                    <h1 class="welcome-title">Analytics & Reports</h1>
-                    <p class="welcome-subtitle">Detailed insights into student performance and engagement</p>
-                </div>
-                
-                <div class="dashboard-grid">
-                    <div class="chart-container">
-                        <div class="card-header">
-                            <h2 class="card-title">Course Completion Over Time</h2>
-                        </div>
-                        <canvas id="completionChart" height="300"></canvas>
-                    </div>
-                    
-                    <div class="chart-container">
-                        <div class="card-header">
-                            <h2 class="card-title">Quiz Performance by Module</h2>
-                        </div>
-                        <canvas id="quizPerformanceChart" height="300"></canvas>
-                    </div>
-                </div>
-                
-                <div class="table-container" style="padding: 20px; background: #fff; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); margin-top: 20px;">
-                <div class="table-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
-                    <h2 class="table-title" style="font-size: 20px; font-weight: 600; color: #333; margin: 0;">Top Performing Students</h2>
-                    <button class="btn btn-primary" id="exportReportBtn" 
-                        style="padding: 8px 14px; font-size: 14px; border-radius: 8px; display: flex; align-items: center; gap: 6px;">
-                        <i class="fas fa-download"></i> Export Report
-                    </button>
-                </div>
-    
-    <table class="table table-striped table-hover" style="width: 100%; border-collapse: collapse; border-radius: 10px; overflow: hidden;">
-        <thead style="background: #007bff; color: #fff; font-size: 15px;">
-            <tr>
-                <th style="padding: 12px; text-align: left;">Rank</th>
-                <th style="padding: 12px; text-align: left;">Student Name</th>
-                <th style="padding: 12px; text-align: left;">Average Score</th>
-                <th style="padding: 12px; text-align: left;">Completion %</th>
-
-                <th style="padding: 12px; text-align: left;">Learning Style</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for student in top_performers %}
-            <tr style="border-bottom: 1px solid #eee; font-size: 14px;">
-                <td style="padding: 10px; font-weight: 600; color: #444;">{{ forloop.counter }}</td>
-                <td style="padding: 10px; color: #333;"><strong>{{ student.first_name }} {{ student.last_name }}</strong></td>
-                <td style="padding: 10px; color: #007bff; font-weight: 500;">{{ student.avg_score }}%</td>
-                <td style="padding: 10px; color: #28a745; font-weight: 500;">{{ student.completion }}%</td>
             
-                <td style="padding: 10px; color: #555; font-style: italic;">{{ student.learning_style|title }}</td>
-            </tr>
-            {% empty %}
-            <tr>
-                <td colspan="6" style="text-align: center; padding: 15px; color: #888;">No data available</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
-</div>
 
+            <!-- Top Performing Students Tab -->
+            <div id="top-students" class="tab-content">
+                <div class="welcome-banner">
+                    <h1 class="welcome-title">Top Performing Students</h1>
+                    <p class="welcome-subtitle">Track the highest achievers</p>
+                </div>
+                
+                <div class="table-container">
+                    <div class="table-header">
+                        <h2 class="table-title">Top Performers</h2>
+                    </div>
+                    <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left;">
+    <thead>
+        <tr style="background: #2563eb; color: white;">
+            <th style="padding: 12px; border: 1px solid #ddd;">Rank</th>
+            <th style="padding: 12px; border: 1px solid #ddd;">Student Name</th>
+            <th style="padding: 12px; border: 1px solid #ddd;">Average Score</th>
+            
+        </tr>
+    </thead>
+    <tbody>
+        {% for student in top_performers %}
+        <tr style="background: {% cycle '#f9fafb' 'white' %}; cursor: pointer;" 
+            onmouseover="this.style.background='#e5e7eb'" 
+            onmouseout="this.style.background='{% cycle '#f9fafb' 'white' %}'">
+            <td style="padding: 12px; border: 1px solid #ddd;">{{ forloop.counter }}</td>
+            <td style="padding: 12px; border: 1px solid #ddd;"><strong>{{ student.first_name }} {{ student.last_name }}</strong></td>
+            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.avg_score }}%</td>
+        </tr>
+        {% empty %}
+        <tr>
+            <td colspan="5" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No data available</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table>
+
+                </div>
             </div>
+
         </main>
     </div>
 
-    <!-- Delete Confirmation Modal -->
-    <div id="deleteModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Confirm Deletion</h2>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <p>Are you sure you want to delete <span id="deleteItemName"></span>? This action cannot be undone.</p>
-            </div>
-            <div class="modal-footer">
-                <button class="btn" id="cancelDelete">Cancel</button>
-                <button class="btn btn-danger" id="confirmDelete">Delete</button>
-            </div>
-        </div>
-    </div>
-
-    <div id="addStudentModal" class="modal">
+    <!-- Quiz Details Modal -->
+<div id="quizModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2 class="modal-title">Add New Student</h2>
-            <button class="modal-close add-close">&times;</button>
+            <h2 class="modal-title" id="modalTitle">Student Quizzes</h2>
+            <button class="modal-close" onclick="closeModal()">&times;</button>
         </div>
-        <div class="modal-body">
-            <form id="addStudentForm">
-                <div class="form-group">
-                    <label for="firstName" class="form-label">First Name</label>
-                    <input type="text" id="firstName" name="first_name" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="lastName" class="form-label">Last Name</label>
-                    <input type="text" id="lastName" name="last_name" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="email" class="form-label">Email Address</label>
-                    <input type="email" id="email" name="email" class="form-control" required>
-                </div>
-                <div class="form-group">
-                    <label for="password" class="form-label">Password</label>
-                    <input type="password" id="password" name="password" class="form-control" required>
-                </div>
-                <button type="submit" class="btn btn-success">Add Student</button>
-            </form>
+        <div class="modal-body" id="modalBody">
+            <p>Loading quiz data...</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-sm btn-danger" onclick="closeModal()">Close</button>
         </div>
     </div>
 </div>
 
-    <!-- Student Detail Modal -->
-    <div id="studentDetailModal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2 class="modal-title">Student Details</h2>
-                <button class="modal-close">&times;</button>
-            </div>
-            <div class="modal-body">
-                <div class="form-group">
-                    <label class="form-label">Student ID</label>
-                    <p id="detail-student-id"></p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Name</label>
-                    <p id="detail-student-name"></p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Email</label>
-                    <p id="detail-student-email"></p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Learning Style</label>
-                    <p id="detail-learning-style"></p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Mastery Level</label>
-                    <p id="detail-mastery-level"></p>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Overall Progress</label>
-                    <div class="progress-bar">
-                        <div class="progress-fill" id="detail-progress-bar" style="width: 0%"></div>
-                    </div>
-                    <small id="detail-progress-text">0% complete</small>
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Last Active</label>
-                    <p id="detail-last-active"></p>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <button class="btn btn-primary" id="viewFullProfile">View Full Profile</button>
-            </div>
-        </div>
-    </div>
 
     <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="copyright">
-                <p>&copy; 2025 Copperbelt University - School of ICT. All rights reserved.</p>
-                <p>Adaptive E-Learning Platform - Admin Dashboard</p>
-            </div>
+    <footer style="background:#1f2937; color:#f9fafb; padding:20px 10px; margin-top:40px; border-top:4px solid #2563eb; text-align:center; font-family:sans-serif;">
+    <div style="max-width:1200px; margin:0 auto;">
+        <p style="margin:5px 0; font-size:15px; font-weight:600;">
+            &copy; 2025 Copperbelt University - School of ICT
+        </p>
+        <p style="margin:5px 0; font-size:13px; color:#d1d5db;">
+            Adaptive E-Learning Platform | Powered by AI for Personalized Learning
+        </p>
+        <div style="margin-top:10px;">
+            <a href="#" style="color:#93c5fd; margin:0 8px; text-decoration:none; font-size:14px;">Privacy Policy</a> |
+            <a href="#" style="color:#93c5fd; margin:0 8px; text-decoration:none; font-size:14px;">Terms</a> |
+            <a href="#" style="color:#93c5fd; margin:0 8px; text-decoration:none; font-size:14px;">Support</a>
         </div>
-    </footer>
+    </div>
+</footer>
+
+<!-- Add this before </body> in your current template -->
+<script>
 
     <script>
-
-        // Functionality for Add Student Modal
-const addStudentBtn = document.getElementById('addStudentBtn');
-const addStudentModal = document.getElementById('addStudentModal');
-const addStudentCloseBtn = document.querySelector('.modal-close.add-close');
-const addStudentForm = document.getElementById('addStudentForm');
-
-addStudentBtn.onclick = () => {
-    addStudentModal.style.display = 'flex';
-}
-
-addStudentCloseBtn.onclick = () => {
-    addStudentModal.style.display = 'none';
-}
-
-window.onclick = (event) => {
-    if (event.target == addStudentModal) {
-        addStudentModal.style.display = 'none';
-    }
-}
-
-addStudentForm.addEventListener('submit', function(e) {
-    e.preventDefault();
-    const formData = new FormData(this);
+document.addEventListener('DOMContentLoaded', function() {
+    // Student search functionality
+    const studentSearch = document.getElementById('studentSearch');
+    const studentTableBody = document.querySelector('#user-management tbody');
+    const originalRows = Array.from(studentTableBody.querySelectorAll('tr'));
+    const rowsPerPage = 10;
+    let currentPage = 1;
+    let filteredStudents = [];
     
-    fetch('/add-student/', {
-        method: 'POST',
-        body: formData,
-        headers: {
-            'X-CSRFToken': '{{ csrf_token }}',
-        },
-    })
+    // Initialize pagination if there are students
+    if (originalRows.length > 0 && !originalRows[0].querySelector('td[colspan]')) {
+        setupPagination(originalRows);
+    }
+    
+    // Search functionality
+    studentSearch.addEventListener('input', function() {
+        const searchTerm = this.value.toLowerCase().trim();
+        
+        if (searchTerm === '') {
+            // Show all students if search is empty
+            filteredStudents = originalRows;
+            currentPage = 1;
+            renderTablePage(filteredStudents, currentPage);
+            setupPagination(filteredStudents);
+            return;
+        }
+        
+        // Filter students based on search term
+        filteredStudents = originalRows.filter(row => {
+            const cells = row.querySelectorAll('td');
+            const studentId = cells[0].textContent.toLowerCase();
+            const studentName = cells[1].textContent.toLowerCase();
+            
+            return studentId.includes(searchTerm) || studentName.includes(searchTerm);
+        });
+        
+        currentPage = 1;
+        renderTablePage(filteredStudents, currentPage);
+        setupPagination(filteredStudents);
+    });
+    
+    function renderTablePage(students, page) {
+        // Clear table
+        studentTableBody.innerHTML = '';
+        
+        if (students.length === 0) {
+            // Show no results message
+            const noResultsRow = document.createElement('tr');
+            noResultsRow.innerHTML = '<td colspan="4" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No students found</td>';
+            studentTableBody.appendChild(noResultsRow);
+            return;
+        }
+        
+        // Calculate start and end indices for current page
+        const startIndex = (page - 1) * rowsPerPage;
+        const endIndex = Math.min(startIndex + rowsPerPage, students.length);
+        
+        // Add rows for current page
+        for (let i = startIndex; i < endIndex; i++) {
+            studentTableBody.appendChild(students[i].cloneNode(true));
+        }
+    }
+    
+    function setupPagination(students) {
+        // Remove existing pagination if it exists
+        const existingPagination = document.getElementById('studentPagination');
+        if (existingPagination) {
+            existingPagination.remove();
+        }
+        
+        if (students.length <= rowsPerPage) {
+            return; // No pagination needed
+        }
+        
+        const totalPages = Math.ceil(students.length / rowsPerPage);
+        
+        // Create pagination container
+        const paginationContainer = document.createElement('div');
+        paginationContainer.id = 'studentPagination';
+        paginationContainer.style.display = 'flex';
+        paginationContainer.style.justifyContent = 'center';
+        paginationContainer.style.marginTop = '20px';
+        paginationContainer.style.gap = '5px';
+        
+        // Previous button
+        const prevButton = document.createElement('button');
+        prevButton.textContent = '←';
+        prevButton.disabled = currentPage === 1;
+        prevButton.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderTablePage(students, currentPage);
+                setupPagination(students);
+            }
+        });
+        paginationContainer.appendChild(prevButton);
+        
+        // Page buttons
+        for (let i = 1; i <= totalPages; i++) {
+            const pageButton = document.createElement('button');
+            pageButton.textContent = i;
+            pageButton.style.fontWeight = i === currentPage ? 'bold' : 'normal';
+            pageButton.addEventListener('click', () => {
+                currentPage = i;
+                renderTablePage(students, currentPage);
+                setupPagination(students);
+            });
+            paginationContainer.appendChild(pageButton);
+        }
+        
+        // Next button
+        const nextButton = document.createElement('button');
+        nextButton.textContent = '→';
+        nextButton.disabled = currentPage === totalPages;
+        nextButton.addEventListener('click', () => {
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderTablePage(students, currentPage);
+                setupPagination(students);
+            }
+        });
+        paginationContainer.appendChild(nextButton);
+        
+        // Add pagination to the table container
+        const tableContainer = document.querySelector('.table-container');
+        tableContainer.appendChild(paginationContainer);
+    }
+});
+</script>
+    // Enhance the showQuizDetails function
+function showQuizDetails(studentId, studentName) {
+    const modal = document.getElementById('quizModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = studentName + " - Quiz Performance";
+    modalBody.innerHTML = "<p>Loading quiz data...</p>";
+    modal.style.display = "flex";
+
+    // Fetch quiz data via AJAX
+    fetch(`/admin/student-quizzes/${studentId}/`)
     .then(response => response.json())
     .then(data => {
-        if (data.success) {
-            alert(data.message);
-            addStudentModal.style.display = 'none';
-            // Reload the page to show the new student
-            location.reload(); 
-        } else {
-            alert(data.error);
+        if (data.quizzes.length === 0) {
+            modalBody.innerHTML = "<p>No quiz attempts available.</p>";
+            return;
         }
+
+        // Calculate average score
+        const totalScore = data.quizzes.reduce((sum, quiz) => sum + quiz.score, 0);
+        const averageScore = totalScore / data.quizzes.length;
+
+        let tableHtml = `
+        <div class="quiz-summary">
+            <p><strong>Total Quizzes Attempted:</strong> ${data.quizzes.length}</p>
+            <p><strong>Average Score:</strong> ${averageScore.toFixed(1)}%</p>
+        </div>
+        <table style="width:100%; border-collapse: collapse; font-size: 14px; text-align:left; margin-top: 15px;">
+            <thead>
+                <tr style="background:#2563eb; color:white;">
+                    <th style="padding:8px; border:1px solid #ddd;">Quiz Title</th>
+                    <th style="padding:8px; border:1px solid #ddd;">Score</th>
+                    <th style="padding:8px; border:1px solid #ddd;">Performance</th>
+                    <th style="padding:8px; border:1px solid #ddd;">Date Attempted</th>
+                </tr>
+            </thead>
+            <tbody>`;
+
+        data.quizzes.forEach(q => {
+            let performanceClass = '';
+            if (q.score >= 80) performanceClass = 'high-score';
+            else if (q.score >= 60) performanceClass = 'medium-score';
+            else performanceClass = 'low-score';
+            
+            tableHtml += `<tr>
+                <td style="padding:8px; border:1px solid #ddd;">${q.title}</td>
+                <td style="padding:8px; border:1px solid #ddd;">${q.score}%</td>
+                <td style="padding:8px; border:1px solid #ddd;">
+                    <div class="progress-bar-small">
+                        <div class="progress-fill-small ${performanceClass}" style="width: ${q.score}%"></div>
+                    </div>
+                </td>
+                <td style="padding:8px; border:1px solid #ddd;">${q.date_attempted || 'N/A'}</td>
+            </tr>`;
+        });
+
+        tableHtml += '</tbody></table>';
+        modalBody.innerHTML = tableHtml;
     })
     .catch(error => {
-        console.error('Error:', error);
-        alert('An error occurred. Please try again.');
+        console.error(error);
+        modalBody.innerHTML = "<p>Error loading quiz data.</p>";
     });
-});
-        // Mobile sidebar toggle functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const mobileToggle = document.getElementById('mobile-toggle');
-            const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
-            
-            // Toggle sidebar function
-            function toggleSidebar() {
-                sidebar.classList.toggle('active');
-                sidebarOverlay.classList.toggle('active');
-                
-                // Change icon based on state
-                if (sidebar.classList.contains('active')) {
-                    mobileToggle.innerHTML = '<i class="fas fa-times"></i>';
-                } else {
-                    mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
-                }
-            }
-            
-            // Add event listeners
-            mobileToggle.addEventListener('click', toggleSidebar);
-            sidebarOverlay.addEventListener('click', toggleSidebar);
-            
-            // Tab functionality
-            const tabLinks = document.querySelectorAll('.menu-link');
-            const tabContents = document.querySelectorAll('.tab-content');
-            
-            tabLinks.forEach(link => {
-                link.addEventListener('click', function(e) {
-                    e.preventDefault();
-                    
-                    // Remove active class from all tabs
-                    tabLinks.forEach(l => l.classList.remove('active'));
-                    tabContents.forEach(c => c.classList.remove('active'));
-                    
-                    // Add active class to clicked tab
-                    this.classList.add('active');
-                    const tabId = this.getAttribute('data-tab');
-                    document.getElementById(tabId).classList.add('active');
-                });
-            });
-            
-            // Modal functionality
-            const modals = document.querySelectorAll('.modal');
-            const deleteModal = document.getElementById('deleteModal');
-            const studentDetailModal = document.getElementById('studentDetailModal');
-            
-            function openModal(modal) {
-                modal.style.display = 'flex';
-            }
-            
-            function closeModal(modal) {
-                modal.style.display = 'none';
-            }
-            
-            // Close modals when clicking on close button or outside
-            modals.forEach(modal => {
-                modal.addEventListener('click', function(e) {
-                    if (e.target === this || e.target.classList.contains('modal-close')) {
-                        closeModal(this);
-                    }
-                });
-            });
-            
-            // Delete functionality
-            const deleteButtons = document.querySelectorAll('.delete-student, .delete-module');
-            let itemToDelete = null;
-            let itemType = null;
-            
-            deleteButtons.forEach(button => {
-                button.addEventListener('click', function() {
-                    const id = this.getAttribute('data-id');
-                    const name = this.closest('tr') ? 
-                        this.closest('tr').querySelector('td:nth-child(2)').textContent : 
-                        this.closest('.module-item').querySelector('.module-title').textContent;
-                    
-                    itemToDelete = id;
-                    itemType = this.classList.contains('delete-student') ? 'student' : 'module';
-                    
-                    document.getElementById('deleteItemName').textContent = name;
-                    openModal(deleteModal);
-                });
-            });
-            
-            document.getElementById('confirmDelete').addEventListener('click', function() {
-                if (itemToDelete && itemType) {
-                    // Send delete request to server
-                    fetch(`/admin/delete-${itemType}/${itemToDelete}/`, {
-                        method: 'POST',
-                        headers: {
-                            'X-CSRFToken': getCookie('csrftoken'),
-                            'Content-Type': 'application/json'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            // Remove item from UI
-                            if (itemType === 'student') {
-                                document.querySelector(`.delete-student[data-id="${itemToDelete}"]`).closest('tr').remove();
-                            } else {
-                                document.querySelector(`.delete-module[data-id="${itemToDelete}"]`).closest('.module-item').remove();
-                            }
-                            
-                            closeModal(deleteModal);
-                            showNotification(`${itemType} deleted successfully`, 'success');
-                        } else {
-                            showNotification(`Error deleting ${itemType}: ${data.error}`, 'error');
-                        }
-                    })
-                    .catch(error => {
-                        showNotification('An error occurred while deleting', 'error');
-                    });
-                }
-            });
-            
-            document.getElementById('cancelDelete').addEventListener('click', function() {
-                closeModal(deleteModal);
-            });
-            
-            // View student details
-           // Update the view student details functionality
-viewButtons.forEach(button => {
-    button.addEventListener('click', function() {
-        const studentId = this.getAttribute('data-id');
-        
-        // Fetch student details from server
-        fetch(`/admin/student-details/${studentId}/`)
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    const student = data.student;
-                    
-                    // Populate modal with student data
-                    document.getElementById('detail-student-id').textContent = student.student_id;
-                    document.getElementById('detail-student-name').textContent = `${student.first_name} ${student.last_name}`;
-                    document.getElementById('detail-student-email').textContent = student.email;
-                    document.getElementById('detail-learning-style').textContent = student.learning_style;
-                    document.getElementById('detail-mastery-level').textContent = student.mastery_level;
-                    
-                    // Update progress bar
-                    const progressBar = document.getElementById('detail-progress-bar');
-                    const progressText = document.getElementById('detail-progress-text');
-                    progressBar.style.width = `${student.progress}%`;
-                    progressText.textContent = `${student.progress}% complete`;
-                    
-                    document.getElementById('detail-last-active').textContent = student.last_active;
-                    
-                    // Set up view full profile button
-                    document.getElementById('viewFullProfile').onclick = function() {
-                        window.location.href = `/admin/student-profile/${studentId}/`;
-                    };
-                    
-                    openModal(studentDetailModal);
-                } else {
-                    showNotification('Error loading student details', 'error');
-                }
-            })
-            .catch(error => {
-                showNotification('An error occurred while loading student details', 'error');
-            });
-    });
-});
-            
-            document.getElementById('studentDetailModal').querySelector('.modal-close').addEventListener('click', function() {
-                closeModal(studentDetailModal);
-            });
-
-            document.getElementById('studentDetailModal').addEventListener('click', function(e) {
-                if (e.target === this) {
-                    closeModal(studentDetailModal);
-                }
-            });
-            
-            // Search functionality for student table
-            const searchInput = document.getElementById('studentSearch');
-            if (searchInput) {
-                searchInput.addEventListener('input', function() {
-                    const searchTerm = this.value.toLowerCase();
-                    const rows = document.querySelectorAll('#user-management tbody tr');
-                    
-                    rows.forEach(row => {
-                        const studentId = row.cells[0].textContent.toLowerCase();
-                        const studentName = row.cells[1].textContent.toLowerCase();
-                        
-                        if (studentId.includes(searchTerm) || studentName.includes(searchTerm)) {
-                            row.style.display = '';
-                        } else {
-                            row.style.display = 'none';
-                        }
-                    });
-                });
-            }
-            
-            // Initialize charts
-            initializeCharts();
-            
-            function initializeCharts() {
-                // Performance Distribution Chart
-                const performanceCtx = document.getElementById('performanceChart').getContext('2d');
-                new Chart(performanceCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['0-20%', '21-40%', '41-60%', '61-80%', '81-100%'],
-                        datasets: [{
-                            label: 'Number of Students',
-                            data: [12, 19, 15, 25, 18],
-                            backgroundColor: [
-                                'rgba(255, 99, 132, 0.7)',
-                                'rgba(255, 159, 64, 0.7)',
-                                'rgba(255, 205, 86, 0.7)',
-                                'rgba(75, 192, 192, 0.7)',
-                                'rgba(54, 162, 235, 0.7)'
-                            ],
-                            borderColor: [
-                                'rgb(255, 99, 132)',
-                                'rgb(255, 159, 64)',
-                                'rgb(255, 205, 86)',
-                                'rgb(75, 192, 192)',
-                                'rgb(54, 162, 235)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                display: false
-                            },
-                            title: {
-                                display: true,
-                                text: 'Students by Progress Range'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                title: {
-                                    display: true,
-                                    text: 'Number of Students'
-                                }
-                            }
-                        }
-                    }
-                });
-                
-                // Learning Style Distribution Chart
-                const learningStyleCtx = document.getElementById('learningStyleChart').getContext('2d');
-                new Chart(learningStyleCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Visual', 'Auditory', 'Kinesthetic'],
-                        datasets: [{
-                            data: [45, 30, 25],
-                            backgroundColor: [
-                                'rgba(54, 162, 235, 0.7)',
-                                'rgba(255, 99, 132, 0.7)',
-                                'rgba(255, 205, 86, 0.7)'
-                            ],
-                            borderColor: [
-                                'rgb(54, 162, 235)',
-                                'rgb(255, 99, 132)',
-                                'rgb(255, 205, 86)'
-                            ],
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            legend: {
-                                position: 'bottom'
-                            },
-                            title: {
-                                display: true,
-                                text: 'Learning Style Distribution'
-                            }
-                        }
-                    }
-                });
-                
-                // Course Completion Over Time Chart
-                const completionCtx = document.getElementById('completionChart').getContext('2d');
-                new Chart(completionCtx, {
-                    type: 'line',
-                    data: {
-                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-                        datasets: [{
-                            label: 'Average Completion %',
-                            data: [15, 25, 32, 40, 48, 55, 62, 68, 73, 78, 82, 85],
-                            fill: false,
-                            borderColor: 'rgb(75, 192, 192)',
-                            tension: 0.1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Course Completion Over Time'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                min: 0,
-                                max: 100,
-                                title: {
-                                    display: true,
-                                    text: 'Completion Percentage'
-                                }
-                            }
-                        }
-                    }
-                });
-                
-                // Quiz Performance by Module Chart
-                const quizPerformanceCtx = document.getElementById('quizPerformanceChart').getContext('2d');
-                new Chart(quizPerformanceCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: ['Variables', 'Data Types', 'Control Structures', 'Functions', 'Arrays', 'Pointers', 'OOP', 'File I/O'],
-                        datasets: [{
-                            label: 'Average Score %',
-                            data: [85, 78, 72, 68, 65, 58, 62, 70],
-                            backgroundColor: 'rgba(54, 162, 235, 0.7)',
-                            borderColor: 'rgb(54, 162, 235)',
-                            borderWidth: 1
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        plugins: {
-                            title: {
-                                display: true,
-                                text: 'Quiz Performance by Module'
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                max: 100,
-                                title: {
-                                    display: true,
-                                    text: 'Average Score (%)'
-                                }
-                            }
-                        }
-                    }
-                });
-            }
-            
-            // Helper function to get CSRF token
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
-            }
-            
-            // Notification function
-            function showNotification(message, type) {
-                // Create notification element
-                const notification = document.createElement('div');
-                notification.style.position = 'fixed';
-                notification.style.top = '20px';
-                notification.style.right = '20px';
-                notification.style.padding = '15px 20px';
-                notification.style.borderRadius = '6px';
-                notification.style.color = 'white';
-                notification.style.fontWeight = '500';
-                notification.style.zIndex = '1100';
-                notification.style.boxShadow = '0 4px 12px rgba(0,0,0,0.15)';
-                notification.style.opacity = '0';
-                notification.style.transition = 'opacity 0.3s ease';
-                
-                if (type === 'success') {
-                    notification.style.background = 'var(--success)';
-                } else {
-                    notification.style.background = 'var(--danger)';
-                }
-                
-                notification.textContent = message;
-                document.body.appendChild(notification);
-                
-                // Animate in
-                setTimeout(() => {
-                    notification.style.opacity = '1';
-                }, 10);
-                
-                // Animate out after 3 seconds
-                setTimeout(() => {
-                    notification.style.opacity = '0';
-                    setTimeout(() => {
-                        document.body.removeChild(notification);
-                    }, 300);
-                }, 3000);
-            }
-        });
-
-        function viewStudent(studentId) {
-    fetch(`/student/${studentId}/details/`)
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alert(`Name: ${data.student.first_name} ${data.student.last_name}\nProgress: ${data.student.progress}%\nAvg Score: ${data.student.avg_score}%`);
-            } else {
-                alert(data.error);
-            }
-        });
 }
 
-function deleteStudent(studentId) {
-    if (confirm("Are you sure you want to delete this student?")) {
-        fetch(`/student/${studentId}/delete/`, {
-            method: "POST",
-            headers: {"X-CSRFToken": getCookie("csrftoken")}
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alert(data.message);
-                location.reload();
-            } else {
-                alert(data.error);
-            }
-        });
+// Add CSS for quiz performance indicators
+const quizModalStyle = `
+<style>
+.high-score {
+    background: #4caf50 !important;
+}
+
+.medium-score {
+    background: #ff9800 !important;
+}
+
+.low-score {
+    background: #f44336 !important;
+}
+
+.quiz-summary {
+    margin-bottom: 15px;
+    padding: 10px;
+    background: #f5f5f5;
+    border-radius: 6px;
+}
+
+.quiz-summary p {
+    margin: 5px 0;
+}
+</style>
+`;
+
+document.head.insertAdjacentHTML('beforeend', quizModalStyle);
+
+    // Add to your JavaScript in admin_dashboard.html
+function showProgressDetails(studentId, studentName) {
+    const modal = document.getElementById('progressModal');
+    const modalTitle = document.getElementById('progressModalTitle');
+    const modalBody = document.getElementById('progressModalBody');
+
+    modalTitle.innerText = studentName + " - Progress Details";
+    modalBody.innerHTML = "<p>Loading progress data...</p>";
+    modal.style.display = "flex";
+
+    // Fetch progress data via AJAX
+    fetch(`/admin/student-progress/${studentId}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (!data.success) {
+            modalBody.innerHTML = `<p>Error: ${data.error}</p>`;
+            return;
+        }
+
+        let html = `<div class="student-info">
+            <h3>${data.student.name}</h3>
+            <p>Email: ${data.student.email}</p>
+        </div>`;
+
+        // Regular courses progress
+        if (data.regular_progress.length > 0) {
+            html += `<h4>Regular Courses Progress</h4>
+            <table class="progress-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Progress</th>
+                        <th>Completed</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            data.regular_progress.forEach(course => {
+                html += `<tr>
+                    <td>${course.course}</td>
+                    <td>
+                        <div class="progress-bar-small">
+                            <div class="progress-fill-small" style="width: ${course.progress}%"></div>
+                        </div>
+                        ${course.progress}%
+                    </td>
+                    <td>${course.completed}/${course.total} lessons</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+        }
+
+        // Generated courses progress
+        if (data.generated_progress.length > 0) {
+            html += `<h4>AI-Generated Courses Progress</h4>
+            <table class="progress-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Progress</th>
+                        <th>Completed</th>
+                        <th>Avg Score</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            data.generated_progress.forEach(course => {
+                html += `<tr>
+                    <td>${course.course}</td>
+                    <td>
+                        <div class="progress-bar-small">
+                            <div class="progress-fill-small" style="width: ${course.progress}%"></div>
+                        </div>
+                        ${course.progress}%
+                    </td>
+                    <td>${course.completed}/${course.total} topics</td>
+                    <td>${course.avg_score}%</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+        }
+
+        // Quiz performance
+        if (data.quiz_performance.length > 0) {
+            html += `<h4>Quiz Performance</h4>
+            <table class="progress-table">
+                <thead>
+                    <tr>
+                        <th>Course</th>
+                        <th>Topic</th>
+                        <th>Score</th>
+                        <th>Completed</th>
+                    </tr>
+                </thead>
+                <tbody>`;
+            
+            data.quiz_performance.forEach(quiz => {
+                html += `<tr>
+                    <td>${quiz.course}</td>
+                    <td>${quiz.topic}</td>
+                    <td>${quiz.score}%</td>
+                    <td>${quiz.completed_at}</td>
+                </tr>`;
+            });
+            
+            html += `</tbody></table>`;
+        }
+
+        modalBody.innerHTML = html;
+    })
+    .catch(error => {
+        console.error(error);
+        modalBody.innerHTML = "<p>Error loading progress data.</p>";
+    });
+}
+
+// Add CSS for the progress modal and tables
+const progressModalStyle = `
+<style>
+.progress-modal .modal-content {
+    max-width: 800px;
+}
+
+.progress-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 15px 0;
+}
+
+.progress-table th, .progress-table td {
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    text-align: left;
+}
+
+.progress-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+}
+
+.progress-bar-small {
+    height: 8px;
+    background: #e0e0e0;
+    border-radius: 4px;
+    margin: 5px 0;
+    width: 100px;
+    display: inline-block;
+}
+
+.progress-fill-small {
+    height: 100%;
+    background: #2563eb;
+    border-radius: 4px;
+}
+
+.student-info {
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid #e0e0e0;
+}
+
+.student-info h3 {
+    margin-bottom: 5px;
+    color: #1a237e;
+}
+
+.student-info p {
+    margin: 0;
+    color: #666;
+}
+</style>
+`;
+
+// Add the progress modal HTML
+const progressModalHTML = `
+<div id="progressModal" class="modal">
+    <div class="modal-content progress-modal">
+        <div class="modal-header">
+            <h2 class="modal-title" id="progressModalTitle">Student Progress</h2>
+            <button class="modal-close" onclick="closeProgressModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="progressModalBody">
+            <p>Loading progress data...</p>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-sm btn-danger" onclick="closeProgressModal()">Close</button>
+        </div>
+    </div>
+</div>
+`;
+
+// Add the modal to the document
+document.body.insertAdjacentHTML('beforeend', progressModalHTML);
+document.head.insertAdjacentHTML('beforeend', progressModalStyle);
+
+function closeProgressModal() {
+    document.getElementById('progressModal').style.display = "none";
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+    const modal = document.getElementById('progressModal');
+    if (event.target === modal) {
+        modal.style.display = "none";
     }
 }
-    </script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-<script>
-function loadPerformanceDistribution() {
-    fetch('/performance-distribution/')
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                new Chart(document.getElementById("performanceChart"), {
-                    type: "bar",
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            label: "Students",
-                            data: data.data,
-                            backgroundColor: "#4e73df"
-                        }]
-                    }
-                });
-            }
-        });
-}
+    // Sidebar toggle for mobile
+    const mobileToggle = document.getElementById('mobile-toggle');
+    const sidebar = document.getElementById('sidebar');
+    mobileToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('active');
+    });
 
-function loadLearningStyles() {
-    fetch('/learning-style-distribution/')
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                new Chart(document.getElementById("learningStyleChart"), {
-                    type: "pie",
-                    data: {
-                        labels: data.labels,
-                        datasets: [{
-                            data: data.data,
-                            backgroundColor: ["#36b9cc", "#1cc88a", "#f6c23e"]
-                        }]
-                    }
-                });
-            }
-        });
-}
+    // Tab switching
+    const menuLinks = document.querySelectorAll('.menu-link');
+    const tabContents = document.querySelectorAll('.tab-content');
 
-window.onload = function() {
-    loadPerformanceDistribution();
-    loadLearningStyles();
-};
+    menuLinks.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            // Remove active class from all menu links
+            menuLinks.forEach(l => l.classList.remove('active'));
+            // Add active class to clicked link
+            link.classList.add('active');
+
+            // Hide all tab contents
+            tabContents.forEach(tab => tab.classList.remove('active'));
+            // Show selected tab
+            const targetTab = document.getElementById(link.dataset.tab);
+            if (targetTab) targetTab.classList.add('active');
+
+            // Close sidebar on mobile
+            if (window.innerWidth <= 1024) sidebar.classList.remove('active');
+        });
+    });
+
+    // Student search filter
+    const searchInput = document.getElementById('studentSearch');
+    if (searchInput) {
+        searchInput.addEventListener('keyup', () => {
+            const filter = searchInput.value.toLowerCase();
+            const rows = document.querySelectorAll('#user-management tbody tr');
+            rows.forEach(row => {
+                const nameCell = row.cells[1];
+                const text = nameCell ? nameCell.textContent.toLowerCase() : '';
+                if (text.indexOf(filter) > -1) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
 </script>
 <script>
-function exportReport() {
-    fetch('/top-performers/')
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                let csv = "Rank,Name,Avg Score,Completion %,Time Spent,Learning Style\n";
-                data.top_performers.forEach(st => {
-                    csv += `${st.rank},${st.first_name} ${st.last_name},${st.avg_score},${st.completion},${st.time_spent},${st.learning_style}\n`;
-                });
-                let blob = new Blob([csv], {type: "text/csv"});
-                let url = URL.createObjectURL(blob);
-                let a = document.createElement("a");
-                a.href = url;
-                a.download = "top_performers_report.csv";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else {
-                alert(data.error);
-            }
+function showQuizDetails(studentId, studentName) {
+    const modal = document.getElementById('quizModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalBody = document.getElementById('modalBody');
+
+    modalTitle.innerText = studentName + " - Quiz Progress";
+    modalBody.innerHTML = "<p>Loading quiz data...</p>";
+    modal.style.display = "flex";
+
+    // Fetch quiz data via AJAX
+    fetch(`/admin/student-quizzes/${studentId}/`)
+    .then(response => response.json())
+    .then(data => {
+        if (data.quizzes.length === 0) {
+            modalBody.innerHTML = "<p>No quiz attempts available.</p>";
+            return;
+        }
+
+        let tableHtml = '<table style="width:100%; border-collapse: collapse; font-size: 14px; text-align:left;">';
+        tableHtml += '<thead><tr style="background:#2563eb; color:white;">';
+        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Quiz Title</th>';
+        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Score</th>';
+        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Completed</th>';
+        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Date Attempted</th>';
+        tableHtml += '</tr></thead><tbody>';
+
+        data.quizzes.forEach(q => {
+            tableHtml += `<tr style="background:#f9fafb;">`;
+            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.title}</td>`;
+            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.score}%</td>`;
+            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.completed ? 'Yes' : 'No'}</td>`;
+            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.date_attempted || 'N/A'}</td>`;
+            tableHtml += `</tr>`;
         });
+
+        tableHtml += '</tbody></table>';
+        modalBody.innerHTML = tableHtml;
+    })
+    .catch(error => {
+        console.error(error);
+        modalBody.innerHTML = "<p>Error loading quiz data.</p>";
+    });
+}
+
+function closeModal() {
+    document.getElementById('quizModal').style.display = "none";
+}
+
+// Close modal on outside click
+window.onclick = function(event) {
+    const modal = document.getElementById('quizModal');
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
 }
 </script>
+
+
 
 </body>
+
 </html>

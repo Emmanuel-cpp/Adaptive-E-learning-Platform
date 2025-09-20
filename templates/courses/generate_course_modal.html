@@ -7,48 +7,64 @@
             <button class="modal-close" onclick="closeGenerateCourseModal()">&times;</button>
         </div>
         <div class="modal-body">
+            
             <form id="generate-course-form">
                 {% csrf_token %}
                 
                 <div class="form-group">
-                    <label for="course-name">Lesson Topic</label>
-                    <input type="text" id="course-name" name="name" class="form-control" 
-                           placeholder="e.g., Introduction to C++" required>
-                    <small class="help-text">This topic will be used to generate C++ lessons.</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="course-description">Description (Optional)</label>
-                    <textarea id="course-description" name="description" class="form-control" 
-                              placeholder="Brief description of your lesson" rows="3"></textarea>
-                </div>
-                
-                <div class="form-group">
-                    <label for="chapter-count">Number of Chapters</label>
-                    <input type="number" id="chapter-count" name="noOfChapters" class="form-control" 
-                           min="1" max="10" value="3" required>
-                    <small class="help-text">Recommended: 3-5 chapters for optimal learning</small>
-                </div>
-                
-                <div class="form-group">
-                    <label for="difficulty-level">Difficulty Level</label>
-                    <select id="difficulty-level" name="level" class="form-control" required>
-                        <option value="beginner" selected>Beginner</option>
-                        <option value="moderate">Moderate</option>
+                    <label for="difficulty-level">Select Your knowledge Level</label>
+                    <select id="difficulty-level" name="level" class="form-control" required onchange="loadLessonsByDifficulty(this.value)">
+                        <option value="" selected disabled>Choose your level</option>
+                        <option value="beginner">Beginner</option>
+                        <option value="moderate">Intermediate</option>
                         <option value="advanced">Advanced</option>
                     </select>
+                    <small class="help-text">Select your current C++ knowledge level</small>
                 </div>
                 
+                <div id="level-description" class="level-description" style="display: none;">
+                    <h4 id="level-title">Level Description</h4>
+                    <p id="level-text">Description will appear here based on your selection</p>
+                </div>
                 
-                <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="closeGenerateCourseModal()">Cancel</button>
-                    <button type="submit" class="btn btn-primary">
-                        <span id="generate-icon">✨</span>
-                        <span id="generate-text">Generate Lessons</span>
-                        <span id="generate-loader" style="display: none;">
-                            <i class="fas fa-spinner fa-spin"></i> Generating...
-                        </span>
-                    </button>
+                <div id="lessons-container" style="display: none;">
+                    <div class="form-group">
+                        <label>Lessons in this course:</label>
+                        <ul id="lesson-list" class="lesson-list">
+                            <!-- Lessons will be dynamically populated here -->
+                        </ul>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="course-name">Course Title</label>
+                        <input type="text" id="course-name" name="name" class="form-control" 
+                               placeholder="e.g., Introduction to C++" required>
+                        <small class="help-text">Based on your selected level</small>
+                    </div>
+                    
+                   <!-- In generate_course_modal.html -->
+                    <div class="form-group">
+                        <label for="chapter-count" style="display: none;">Number of Chapters</label>
+                        <input type="hidden" id="chapter-count" name="noOfChapters" value="1">
+                        <small class="help-text">Each lesson will be treated as an individual learning unit</small>
+                    </div>
+                    
+                    <!-- Hidden field for includeVideo -->
+                    <input type="hidden" id="include-video" name="includeVideo" value="false">
+                    
+                    <!-- Hidden field for lessons -->
+                    <input type="hidden" id="selected-lessons" name="lessons" value="">
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeGenerateCourseModal()">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span id="generate-icon">✨</span>
+                            <span id="generate-text">Generate Lessons</span>
+                            <span id="generate-loader" style="display: none;">
+                                <i class="fas fa-spinner fa-spin"></i> Generating...
+                            </span>
+                        </button>
+                    </div>
                 </div>
             </form>
         </div>
@@ -72,7 +88,7 @@
 .modal-content {
     background: #fff;
     border-radius: 12px;
-    width: 90%; max-width: 500px;
+    width: 90%; max-width: 600px;
     max-height: 90vh; overflow-y: auto;
     z-index: 1001; position: relative;
     box-shadow: 0 10px 25px rgba(0,0,0,0.1);
@@ -87,16 +103,223 @@
 .form-control:focus { outline: none; border-color: #0d47a1; box-shadow: 0 0 0 3px rgba(13,71,161,0.1); }
 .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 25px; }
 .help-text { display: block; margin-top: 5px; font-size: 0.8rem; color: #888; }
+
+/* Level description */
+.level-description {
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    background: #f9f9f9;
+    border-left: 4px solid #0d47a1;
+}
+
+.level-description h4 {
+    margin-bottom: 8px;
+    color: #0d47a1;
+}
+
+/* Lesson list */
+.lesson-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.lesson-item {
+    padding: 10px 12px;
+    margin-bottom: 8px;
+    border-radius: 6px;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    transition: all 0.2s ease;
+}
+
+.lesson-item:hover {
+    background: #e9ecef;
+    transform: translateX(5px);
+}
+
+.lesson-icon {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: #0d47a1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    font-weight: bold;
+}
+
+.lesson-text {
+    flex: 1;
+    font-size: 0.9rem;
+}
+
+/* Difficulty-specific colors */
+.lesson-item.beginner .lesson-icon { background: #4caf50; }
+.lesson-item.moderate .lesson-icon { background: #ff9800; }
+.lesson-item.advanced .lesson-icon { background: #f44336; }
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 25px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    border: none;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.btn-primary {
+    background: #0d47a1;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #0b3d91;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(13,71,161,0.2);
+}
+
+.btn-secondary {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.btn-secondary:hover {
+    background: #e0e0e0;
+}
+
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+    }
+    
+    .lesson-text {
+        font-size: 0.85rem;
+    }
+}
 </style>
 
 <script>
+// Predefined lessons for each difficulty level (max 6 per level)
+const LESSONS_BY_LEVEL = {
+    beginner: [
+        "Introduction to C++ Programming",
+        "Variables, Data Types, and Constants",
+        "Control Flow and Functions",
+        "Arrays and Strings",
+        "Setting Up Development Environment",
+        "Basic Input/Output Operations"  // Replaced "Basic Memory Management"
+    ],
+    moderate: [
+        "Object-Oriented Programming Concepts",
+        "Basic Memory Management",  // Added to moderate level
+        "Advanced Pointers and Memory",
+        "Inheritance and Polymorphism",
+        "Exception Handling",
+        "File I/O Operations"
+    ],
+    advanced: [
+        "Advanced Memory Management",
+        "Multithreading and Concurrency",
+        "Template Metaprogramming",
+        "STL Containers and Algorithms",
+        "Performance Optimization",
+        "Design Patterns in C++"
+    ]
+};
+
+// Level descriptions
+const LEVEL_DESCRIPTIONS = {
+    beginner: {
+        title: "Beginner Level",
+        text: "You're new to programming or C++. This course will cover fundamentals like syntax, basic data structures, and simple programs."
+    },
+    moderate: {
+        title: "Intermediate Level",
+        text: "You understand C++ basics and are ready for OOP concepts, memory management, and standard library features."
+    },
+    advanced: {
+        title: "Advanced Level",
+        text: "You're experienced with C++ and want to explore advanced topics like metaprogramming, concurrency, and optimization."
+    }
+};
+
+// Default course titles for each level
+const DEFAULT_COURSE_TITLES = {
+    beginner: "Introduction to C++ Programming",
+    moderate: "Intermediate C++ Development",
+    advanced: "Advanced C++ Mastery"
+};
+
 function openGenerateCourseModal() {
     document.getElementById('generate-course-modal').style.display = 'flex';
     document.getElementById('generate-course-form').reset();
+    document.getElementById('lessons-container').style.display = 'none';
+    document.getElementById('level-description').style.display = 'none';
+    document.getElementById('include-video').value = 'false';
+    document.getElementById('chapter-count').value = '6'; // Set default to 6
 }
 
 function closeGenerateCourseModal() {
     document.getElementById('generate-course-modal').style.display = 'none';
+}
+
+function loadLessonsByDifficulty(level) {
+    const lessonsContainer = document.getElementById('lessons-container');
+    const lessonList = document.getElementById('lesson-list');
+    const levelDesc = document.getElementById('level-description');
+    const levelTitle = document.getElementById('level-title');
+    const levelText = document.getElementById('level-text');
+    const courseName = document.getElementById('course-name');
+    const selectedLessons = document.getElementById('selected-lessons');
+    
+    if (!level) {
+        lessonsContainer.style.display = 'none';
+        levelDesc.style.display = 'none';
+        return;
+    }
+    
+    // Show level description
+    levelTitle.textContent = LEVEL_DESCRIPTIONS[level].title;
+    levelText.textContent = LEVEL_DESCRIPTIONS[level].text;
+    levelDesc.style.display = 'block';
+    
+    // Set default course title
+    courseName.value = DEFAULT_COURSE_TITLES[level];
+    
+    // Set the lessons as a hidden field
+    selectedLessons.value = JSON.stringify(LESSONS_BY_LEVEL[level]);
+    
+    // Clear previous lessons
+    lessonList.innerHTML = '';
+    
+    // Add lessons for the selected level
+    LESSONS_BY_LEVEL[level].forEach((lesson, index) => {
+        const lessonElement = document.createElement('li');
+        lessonElement.className = `lesson-item ${level}`;
+        lessonElement.innerHTML = `
+            <div class="lesson-icon">${index + 1}</div>
+            <div class="lesson-text">${lesson}</div>
+        `;
+        lessonList.appendChild(lessonElement);
+    });
+    
+    // Show the lessons section
+    lessonsContainer.style.display = 'block';
 }
 
 function getCSRFToken() {
@@ -112,25 +335,48 @@ function resetGenerateButton() {
 
 document.getElementById('generate-course-form').addEventListener('submit', async function(e) {
     e.preventDefault();
+    
+    const difficulty = document.getElementById('difficulty-level').value;
+    
+    if (!difficulty) {
+        alert('Please select a difficulty level');
+        return;
+    }
+    
     document.getElementById('generate-icon').style.display = 'none';
     document.getElementById('generate-text').style.display = 'none';
     document.getElementById('generate-loader').style.display = 'inline';
 
+    // Prepare form data according to backend expectations
     const formData = {
         name: document.getElementById('course-name').value,
-        description: document.getElementById('course-description').value,
+        description: "", // Empty string as we removed the description field
         noOfChapters: parseInt(document.getElementById('chapter-count').value),
-        level: document.getElementById('difficulty-level').value,
-        includeVideo: document.getElementById('include-video').checked
+        level: difficulty,
+        includeVideo: document.getElementById('include-video').value === 'true',
+        lessons: JSON.parse(document.getElementById('selected-lessons').value)
     };
 
     try {
         const response = await fetch('{% url "generate_course" %}', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCSRFToken() },
+            headers: { 
+                'Content-Type': 'application/json', 
+                'X-CSRFToken': getCSRFToken(),
+                'X-Requested-With': 'XMLHttpRequest'
+            },
             body: JSON.stringify(formData)
         });
-        const data = await response.json();
+        
+       // Check if response is OK
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error('Server error response:', errorText);
+            throw new Error(`HTTP error! status: ${response.status}, details: ${errorText}`);
+        }
+        
+        const data = await response.json()
+        
         if (data.success) {
             window.location.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.first_topic_id}`;
         } else {
@@ -138,12 +384,28 @@ document.getElementById('generate-course-form').addEventListener('submit', async
             resetGenerateButton();
         }
     } catch (error) {
+        console.error('Full error details:', error);
         alert('Error generating lessons: ' + error.message);
         resetGenerateButton();
     }
 });
 
 // Close modal on click outside or Escape
-document.getElementById('generate-course-modal').addEventListener('click', e => { if(e.target===this) closeGenerateCourseModal(); });
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeGenerateCourseModal(); });
+document.getElementById('generate-course-modal').addEventListener('click', e => { 
+    if(e.target === document.getElementById('generate-course-modal')) {
+        closeGenerateCourseModal(); 
+    }
+});
+document.addEventListener('keydown', e => { 
+    if(e.key === 'Escape') closeGenerateCourseModal(); 
+});
+
+// Initialize modal when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Add event listener to the button that opens the modal
+    const generateBtn = document.querySelector('[onclick="openGenerateCourseModal()"]');
+    if (generateBtn) {
+        generateBtn.addEventListener('click', openGenerateCourseModal);
+    }
+});
 </script>

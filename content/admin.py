@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import Course, Module, Lesson, GeneratedChapter, GeneratedCourse, GeneratedTopic
-from .models import GeneratedQuiz, GeneratedQuestion, GeneratedAnswer, GeneratedCourseProgress, CompletedTopic
+from .models import GeneratedQuiz, GeneratedQuestion, GeneratedAnswer, GeneratedCourseProgress
 class LessonInline(admin.StackedInline):
     model = Lesson
     extra = 1
@@ -42,4 +42,3 @@ admin.site.register(GeneratedQuestion)
 admin.site.register(GeneratedAnswer)
 
 admin.site.register(GeneratedCourseProgress)
-admin.register(CompletedTopic)

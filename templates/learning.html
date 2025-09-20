@@ -197,7 +197,7 @@
             height: 100%;
             background: var(--accent);
             border-radius: 4px;
-            width: 45%;
+            width: {{ progress_percentage }}%;
         }
         
         .progress-text {
@@ -658,7 +658,6 @@
         }
 
         /* Sidebar Module List */
-/* Sidebar Module List */
     .module-list {
         list-style: none;
         padding: 0.5rem;
@@ -1112,21 +1111,27 @@
 
             <ul class="module-list">
                 {% if is_generated %}
-                    {% for chapter in course.chapters.all %}
-                        <li class="module-item {% if chapter == module %}active{% endif %}">
-                            {% if chapter.topics.first %}
-                                <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ chapter.topics.first.id }}" class="module-link">
+                    {% for topic in all_topics %}
+                        <li class="module-item {% if topic == lesson %}active{% endif %} {% if topic.id not in unlocked_topics %}locked{% endif %}">
+                            {% if topic.id in unlocked_topics %}
+                                <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ topic.id }}" class="module-link">
                                     <div class="module-icon">
                                         <i class="fas fa-play"></i>
                                     </div>
-                                    <span class="module-title">{{ chapter.title }}</span>
+                                    <span class="module-title">{{ topic.title }}</span>
+                                    {% if topic in completed_topics %}
+                                        <div class="module-status completed">✓</div>
+                                    {% else %}
+                                        <div class="module-status">→</div>
+                                    {% endif %}
                                 </a>
                             {% else %}
                                 <span class="module-link disabled" style="opacity:0.6; cursor:not-allowed;">
                                     <div class="module-icon">
-                                        <i class="fas fa-ban"></i>
+                                        <i class="fas fa-lock"></i>
                                     </div>
-                                    <span class="module-title">{{ chapter.title }} (No topics)</span>
+                                    <span class="module-title">{{ topic.title }}</span>
+                                    <div class="module-status">🔒</div>
                                 </span>
                             {% endif %}
                         </li>
@@ -1157,81 +1162,115 @@
                 {% endif %}
             </ul>
         </aside>
-
+        
         <!-- Main Content -->
         <main class="content-area">
-           
-
-<div class="lesson-content">
-    <h2>{{ lesson.title }}</h2>
-   {% if is_generated %}
-    <div class="generated-content">{{ lesson.content|markdown }}</div>
-            {% if is_generated and lesson.quiz %}
-<div id="quiz-section" class="quiz-container mb-4 p-4 rounded shadow-sm">
-    <h3 class="text-primary-dark font-montserrat font-bold">Quiz</h3>
-    <form id="quiz-form" data-topic-id="{{ lesson.id }}" data-is-regenerated="{{ lesson.is_regenerated|yesno:'true,false' }}">
-        {% csrf_token %}
-        {% for question in quiz_questions %}
-            <div class="quiz-question mb-3" data-question-id="{{ question.id }}">
-                <p class="font-poppins font-medium">{{ forloop.counter }}. {{ question.question_text }}</p>
-                <div class="options mt-2">
-                    {% for answer in question.answers.all %}
-                        <div class="form-check">
-                            <input class="form-check-input" type="radio" name="question-{{ question.id }}" 
-                                   id="answer-{{ answer.id }}" value="{{ answer.option_key }}" required>
-                            <label class="form-check-label" for="answer-{{ answer.id }}">
-                                {{ answer.answer_text }}
-                            </label>
-                        </div>
-                    {% endfor %}
-                </div>
-            </div>
-        {% endfor %}
-        <button type="submit" class="btn btn-primary mt-3" id="quiz-submit-btn">Submit Quiz</button>
-    </form>
-    <div id="quiz-feedback" class="mt-3" style="display: none;"></div>
-</div>
-{% endif %}
-
-{% else %}
-    {{ lesson.content|safe }}
-{% endif %}
-</div>
-            <div class="content-footer">
-    {% if previous_lesson %}
-        {% if is_generated %}
-            <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ previous_lesson.id }}" class="nav-btn outline">
-                <i class="fas fa-arrow-left"></i> Previous: {{ previous_lesson.title }}
-            </a>
-        {% else %}
-            <a href="{% url 'learning' lesson_id=previous_lesson.id %}" class="nav-btn outline">
-                <i class="fas fa-arrow-left"></i> Previous: {{ previous_lesson.title }}
-            </a>
-        {% endif %}
-    {% endif %}
-
-    {% if next_lesson %}
-        {# Check if current topic is completed and passed #}
-        {% if is_generated %}
-            {% if topic_completed %}
-                <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ next_lesson.id }}" class="nav-btn">
-                    Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
-                </a>
-            {% else %}
-                <button class="nav-btn" disabled title="Complete current lesson with a passing grade to proceed">
-                    Next: {{ next_lesson.title }} <i class="fas fa-lock"></i>
-                </button>
-            {% endif %}
-        {% else %}
-            <a href="{% url 'learning' lesson_id=next_lesson.id %}" class="nav-btn">
-                Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
-            </a>
-        {% endif %}
-    {% endif %}
-</div>
-
-           <div class="completion-section" style="margin: 40px 0; text-align: center;">
+            <div class="lesson-content">
+                <h2>{{ lesson.title }}</h2>
                 {% if is_generated %}
+                    <div class="generated-content">{{ lesson.content|markdown }}</div>
+                    
+                    <!-- Fixed quiz display condition -->
+                    {% if is_generated and quiz_questions %}
+                        <div id="quiz-section" class="quiz-container mb-4 p-4 rounded shadow-sm">
+                            <h3 class="text-primary-dark font-montserrat font-bold">Quiz</h3>
+                            <form id="quiz-form" data-topic-id="{{ lesson.id }}" data-is-regenerated="{{ lesson.is_regenerated|yesno:'true,false' }}">
+                                {% csrf_token %}
+                                {% for question in quiz_questions %}
+                                    <div class="quiz-question mb-3" data-question-id="{{ question.id }}">
+                                        <p class="font-poppins font-medium">{{ forloop.counter }}. {{ question.question_text }}</p>
+                                        <div class="options mt-2">
+                                            {% for answer in question.answers.all %}
+                                                <div class="form-check">
+                                                    <input class="form-check-input" type="radio" name="question-{{ question.id }}" 
+                                                           id="answer-{{ answer.id }}" value="{{ answer.option_key }}" required>
+                                                    <label class="form-check-label" for="answer-{{ answer.id }}">
+                                                        {{ answer.answer_text }}
+                                                    </label>
+                                                </div>
+                                            {% endfor %}
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                                <button type="submit" class="btn btn-primary mt-3" id="quiz-submit-btn">Submit Quiz</button>
+                            </form>
+                            <div id="quiz-feedback" class="mt-3" style="display: none;"></div>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    {{ lesson.content|safe }}
+                {% endif %}
+            </div>
+            
+            <!-- Enhanced Navigation Buttons -->
+            <div class="content-footer">
+                {% if previous_lesson %}
+                    {% if is_generated %}
+                        <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ previous_lesson.id }}" class="nav-btn outline">
+                            <i class="fas fa-arrow-left"></i> Previous: {{ previous_lesson.title }}
+                        </a>
+                    {% else %}
+                        <a href="{% url 'learning' lesson_id=previous_lesson.id %}" class="nav-btn outline">
+                            <i class="fas fa-arrow-left"></i> Previous: {{ previous_lesson.title }}
+                        </a>
+                    {% endif %}
+                {% else %}
+                    <span></span> <!-- Empty spacer for alignment -->
+                {% endif %}
+
+                {% if next_lesson %}
+                    {% if is_generated %}
+                        {% if topic_completed and completion.score >= 50 %}
+                            <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ next_lesson.id }}" class="nav-btn">
+                                Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
+                            </a>
+                        {% else %}
+                            <button class="nav-btn" disabled title="Complete current lesson with a passing grade to proceed">
+                                Next: {{ next_lesson.title }} <i class="fas fa-lock"></i>
+                            </button>
+                        {% endif %}
+                    {% else %}
+                        <a href="{% url 'learning' lesson_id=next_lesson.id %}" class="nav-btn">
+                            Next: {{ next_lesson.title }} <i class="fas fa-arrow-right"></i>
+                        </a>
+                    {% endif %}
+                {% else %}
+                    {% if is_generated and topic_completed and completion.score >= 50 %}
+                        <a href="{% url 'dashboard' %}" class="nav-btn success">
+                            Complete Course <i class="fas fa-trophy"></i>
+                        </a>
+                    {% else %}
+                        <button class="nav-btn" disabled title="Complete current lesson with a passing grade to complete the course">
+                            Complete Course <i class="fas fa-lock"></i>
+                        </button>
+                    {% endif %}
+                {% endif %}
+            </div>
+
+            <!-- Enhanced Completion Section -->
+            <div class="completion-section" style="margin: 40px 0; text-align: center;">
+                {% if is_generated %}
+                    {% if not topic_completed %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> Complete the quiz to mark this topic as completed.
+                        </div>
+                    {% elif completion.score < 50 %}
+                        <div class="alert alert-warning">
+                            <i class="fas fa-exclamation-triangle"></i> You completed this topic but didn't pass. Consider reviewing the material.
+                            <div class="mt-3">
+                                <button class="btn btn-primary me-2" onclick="retryQuiz()">
+                                    <i class="fas fa-redo me-2"></i>Retry Quiz
+                                </button>
+                                <button class="btn btn-warning" onclick="regenerateSimplerLesson({{ course.id }}, {{ lesson.id }})">
+                                    <i class="fas fa-graduation-cap me-2"></i>Get Simpler Lesson
+                                </button>
+                            </div>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-success">
+                            <i class="fas fa-check-circle"></i> You've successfully completed this topic with a score of {{ completion.score }}%.
+                        </div>
+                    {% endif %}
                 {% else %}
                     <form method="post" action="{% url 'complete_lesson' lesson_id=lesson.id %}">
                         {% csrf_token %}
@@ -1241,37 +1280,98 @@
                     </form>
                 {% endif %}
             </div>
-            <!-- Add this to your learning.html template -->
-<div id="quiz-results" style="display: none;">
-    <div class="quiz-feedback" id="quiz-feedback"></div>
-    
-    <div id="remedial-resources" class="mt-4" style="display: none;">
-        <h4>Recommended Resources to Improve Your Understanding:</h4>
-        <div class="resource-list" id="resource-list"></div>
+            
+            <!-- Quiz Results Section -->
+            <div id="quiz-results" style="display: none;">
+                <div class="quiz-feedback" id="quiz-feedback"></div>
+                
+                <div id="remedial-resources" class="mt-4" style="display: none;">
+                    <h4>Recommended Resources to Improve Your Understanding:</h4>
+                    <div class="resource-list" id="resource-list"></div>
+                </div>
+                
+                <div id="alternative-content" class="mt-4" style="display: none;">
+                    <h4>Simplified Explanation:</h4>
+                    <div class="simplified-content" id="simplified-content"></div>
+                </div>
+                
+                <div class="action-buttons mt-4">
+                    <button id="retry-quiz" class="btn btn-primary" style="display: none;">
+                        <i class="fas fa-redo"></i> Retry Quiz
+                    </button>
+                    <a id="next-topic-btn" class="btn btn-success" style="display: none;">
+                        Continue to Next Topic <i class="fas fa-arrow-right"></i>
+                    </a>
+                </div>
+            </div>
+            {% if needs_reinforcement and reinforcement_topic %}
+                <div class="reinforcement-section mt-4 p-4 bg-light rounded">
+                    <h4 class="text-primary">
+                        <i class="fas fa-graduation-cap me-2"></i>Reinforcement Lesson Available
+                    </h4>
+                    <p>Based on your performance in this course, we've created a reinforcement lesson to help you master the concepts.</p>
+                    <a href="{% url 'learning_default' %}?generated_course_id={{ course.id }}&topic_id={{ reinforcement_topic.id }}" 
+                    class="btn btn-primary mt-2">
+                        <i class="fas fa-brain me-2"></i>Start Reinforcement Lesson
+                    </a>
+                </div>
+            {% endif %}
+        </main>
     </div>
-    
-    <div id="alternative-content" class="mt-4" style="display: none;">
-        <h4>Simplified Explanation:</h4>
-        <div class="simplified-content" id="simplified-content"></div>
-    </div>
-    
-    <div class="action-buttons mt-4">
-        <button id="retry-quiz" class="btn btn-primary" style="display: none;">
-            <i class="fas fa-redo"></i> Retry Quiz
-        </button>
-        <a id="next-topic-btn" class="btn btn-success" style="display: none;">
-            Continue to Next Topic <i class="fas fa-arrow-right"></i>
-        </a>
-    </div>
-</div>
 
-<script>
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div class="copyright">
+                <p>&copy; 2025 Copperbelt University - School of ICT. All rights reserved.</p>
+                <p>Adaptive E-Learning Platform for First Year ICT Students</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+// Quiz functionality with try-again feature
+
+// Mobile sidebar toggle functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const mobileToggle = document.getElementById('mobile-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+    
+    // Toggle sidebar function
+    function toggleSidebar() {
+        sidebar.classList.toggle('active');
+        sidebarOverlay.classList.toggle('active');
+        
+        // Change icon based on state
+        if (sidebar.classList.contains('active')) {
+            mobileToggle.innerHTML = '<i class="fas fa-times"></i>';
+        } else {
+            mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
+        }
+    }
+    
+    // Add event listeners
+    mobileToggle.addEventListener('click', toggleSidebar);
+    sidebarOverlay.addEventListener('click', toggleSidebar);
+    
+    // Close sidebar when clicking on a module item (mobile only)
+    if (window.innerWidth < 768) {
+        document.querySelectorAll('.module-item').forEach(item => {
+            item.addEventListener('click', function() {
+                sidebar.classList.remove('active');
+                sidebarOverlay.classList.remove('active');
+                mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
+            });
+        });
+    }
+});
+
 // Update the validateQuiz function to handle the new response format
-// Update the validateQuiz function to handle regeneration
 async function validateQuiz() {
     const quizForm = document.getElementById('quiz-form');
     const topicId = quizForm.dataset.topicId;
-    const isRegenerated = quizForm.dataset.isRegenerated === 'true'; // Check if this is already a regenerated topic
+    const isRegenerated = quizForm.dataset.isRegenerated === 'true';
     const submitBtn = document.getElementById('quiz-submit-btn');
     const feedbackDiv = document.getElementById('quiz-feedback');
     const resultsDiv = document.getElementById('quiz-results');
@@ -1312,13 +1412,13 @@ async function validateQuiz() {
             body: JSON.stringify({
                 topic_id: parseInt(topicId),
                 answers: userAnswers,
-                is_retry: window.isRetryAttempt || false // Track if this is a retry
+                is_retry: window.isRetryAttempt || false
             })
         });
         
         const data = await response.json();
         
-        if (data.success) {
+         if (data.success) {
             // Show results section
             resultsDiv.style.display = 'block';
             
@@ -1367,7 +1467,7 @@ async function validateQuiz() {
                             <button class="btn btn-primary" onclick="retryQuiz()">
                                 <i class="fas fa-redo me-2"></i>Retry Same Quiz
                             </button>
-                            <button class="btn btn-warning" onclick="regenerateSimplerLesson(${data.course_id}, ${topicId})">
+                            <button class="btn btn-warning" onclick="regenerateSimplerLesson({{ course.id }}, ${topicId})">
                                 <i class="fas fa-graduation-cap me-2"></i>Get Simpler Lesson
                             </button>
                         </div>
@@ -1421,7 +1521,6 @@ async function validateQuiz() {
     }
 }
 
-
 function retryQuiz() {
     console.log('Retry quiz clicked');
     // Set flag to indicate this is a retry attempt
@@ -1431,21 +1530,44 @@ function retryQuiz() {
     window.location.reload();
 }
 
-// Function to regenerate a simpler version of the lesson
 async function regenerateSimplerLesson(courseId, topicId) {
     console.log('Regenerate simpler lesson clicked', courseId, topicId);
+    
+    // Show loading state
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
+    button.disabled = true;
+    
     try {
+        const csrfToken = getCookie('csrftoken');
+        if (!csrfToken) {
+            throw new Error('CSRF token not found');
+        }
+        
+        console.log('CSRF token found');
+        
         const response = await fetch('/api/regenerate-topic/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken'),
+                'X-CSRFToken': csrfToken,
             },
             body: JSON.stringify({
                 course_id: courseId,
                 topic_id: topicId
             })
         });
+        
+        console.log('Response status:', response.status);
+        
+        // Check if response is JSON
+        const contentType = response.headers.get('content-type');
+        if (!contentType || !contentType.includes('application/json')) {
+            const text = await response.text();
+            console.error('Non-JSON response:', text);
+            throw new Error('Server returned non-JSON response: ' + text);
+        }
         
         const data = await response.json();
         console.log('Regenerate response:', data);
@@ -1461,8 +1583,15 @@ async function regenerateSimplerLesson(courseId, topicId) {
             }
         }
     } catch (error) {
-        console.error('Error:', error);
-        alert('An error occurred while generating the simplified lesson. Please try again.');
+        console.error('Detailed error:', error);
+        console.error('Error name:', error.name);
+        console.error('Error message:', error.message);
+        console.error('Error stack:', error.stack);
+        alert('An error occurred while generating the simplified lesson: ' + error.message);
+    } finally {
+        // Restore button state
+        button.innerHTML = originalText;
+        button.disabled = false;
     }
 }
 
@@ -1480,17 +1609,6 @@ function getCookie(name) {
         }
     }
     return cookieValue;
-}
-
-// Function to retry with a simplified topic
-function retryWithSimplifiedTopic(topicId) {
-    // Set flag to indicate this is a retry attempt
-    window.isRetryAttempt = true;
-    
-    // Redirect to the simplified topic
-    const url = new URL(window.location.href);
-    url.searchParams.set('topic_id', topicId);
-    window.location.href = url.toString();
 }
 
 // Function to retry the same quiz
@@ -1514,60 +1632,6 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Quiz form not found');
     }
 });
-</script>
-        </main>
-
-    </div>
-
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <div class="copyright">
-                <p>&copy; 2025 Copperbelt University - School of ICT. All rights reserved.</p>
-                <p>Adaptive E-Learning Platform for First Year ICT Students</p>
-            </div>
-        </div>
-    </footer>
-
-    <script>
-// Quiz functionality with try-again feature
-
- // Mobile sidebar toggle functionality
-        document.addEventListener('DOMContentLoaded', function() {
-            const mobileToggle = document.getElementById('mobile-toggle');
-            const sidebar = document.getElementById('sidebar');
-            const sidebarOverlay = document.getElementById('sidebar-overlay');
-            
-            // Toggle sidebar function
-            function toggleSidebar() {
-                sidebar.classList.toggle('active');
-                sidebarOverlay.classList.toggle('active');
-                
-                // Change icon based on state
-                if (sidebar.classList.contains('active')) {
-                    mobileToggle.innerHTML = '<i class="fas fa-times"></i>';
-                } else {
-                    mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
-                }
-            }
-            
-            // Add event listeners
-            mobileToggle.addEventListener('click', toggleSidebar);
-            sidebarOverlay.addEventListener('click', toggleSidebar);
-            
-            // Close sidebar when clicking on a module item (mobile only)
-            if (window.innerWidth < 768) {
-                document.querySelectorAll('.module-item').forEach(item => {
-                    item.addEventListener('click', function() {
-                        sidebar.classList.remove('active');
-                        sidebarOverlay.classList.remove('active');
-                        mobileToggle.innerHTML = '<i class="fas fa-bars"></i>';
-                    });
-                });
-            }
-        });
-
-</script>
-
+    </script>
 </body>
 </html>

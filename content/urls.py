@@ -18,4 +18,5 @@ urlpatterns = [
     path('api/get-topic-data/<int:topic_id>/', views.get_topic_data_api, name='get_topic_data_api'),
     path('progress-analysis/', views.progress_analysis_view, name='progress_analysis'),
     path('api/regenerate-topic/', views.regenerate_topic, name='regenerate_topic'),
+    path('api/check-course-name/', views.check_course_name, name='check_course_name'),
 ]

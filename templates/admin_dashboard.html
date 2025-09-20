@@ -773,7 +773,18 @@
     color: white;
 }
 
-        
+.chart-container {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+    margin-bottom: 30px;
+}
+
+#activityChart {
+    width: 100% !important;
+    height: 300px !important;
+}        
         
     </style>
 <body>
@@ -864,7 +875,7 @@
                                 <div class="progress-fill" style="width: {{ avg_progress }}%"></div>
                             </div>
                         </div>
-                        <div class="stat-label">{{ total_completed }} of {{ total_learning_items }} items completed</div>
+                        <div class="stat-label">{{ total_completed }} of {{ total_learning_items }} lessons completed</div>
                     </div>
                     
                     <div class="dashboard-card">
@@ -891,87 +902,94 @@
                         
                     </div>
                     
-                <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left;">
-                    <thead>
-                        <tr style="background: #2563eb; color: white;">
-                            <th style="padding: 12px; border: 1px solid #ddd;">Student ID</th>
-                            <th style="padding: 12px; border: 1px solid #ddd;">Student Name</th>
-                            <th style="padding: 12px; border: 1px solid #ddd;">Progress</th>
-                            <th style="padding: 12px; border: 1px solid #ddd;">Last Active</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {% for student in student_progress %}
-                        <tr style="background: {% cycle '#f9fafb' 'white' %}; cursor: pointer;" 
-                            onmouseover="this.style.background='#e5e7eb'" 
-                            onmouseout="this.style.background='{% cycle '#f9fafb' 'white' %}'">
-                            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.student_id }}</td>
-                            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.first_name }} {{ student.last_name }}</td>
-                            <td style="padding: 12px; border: 1px solid #ddd;">
-                                <div style="background:#e5e7eb; border-radius: 6px; height: 10px; width:100%;">
-                                    <div style="background:#2563eb; height:100%; width: {{ student.progress_percentage|default:0 }}%; border-radius: 6px;"></div>
-                                </div>
-                                <small>{{ student.progress_percentage|default:0 }}% complete</small>
-                            </td>
-                            <td style="padding: 12px; border: 1px solid #ddd;">
-                                {% if student.last_active %}
-                                    {{ student.last_active|timesince }} ago
-                                {% else %}
-                                    Never
-                                {% endif %}
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="4" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No student data available</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-                </div>
-                
-            </div>
-            
-
-            <!-- Top Performing Students Tab -->
-            <div id="top-students" class="tab-content">
-                <div class="welcome-banner">
-                    <h1 class="welcome-title">Top Performing Students</h1>
-                    <p class="welcome-subtitle">Track the highest achievers</p>
-                </div>
-                
-                <div class="table-container">
-                    <div class="table-header">
-                        <h2 class="table-title">Top Performers</h2>
-                    </div>
-                    <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left;">
+<table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left;">
     <thead>
         <tr style="background: #2563eb; color: white;">
-            <th style="padding: 12px; border: 1px solid #ddd;">Rank</th>
+            <th style="padding: 12px; border: 1px solid #ddd;">Student ID</th>
             <th style="padding: 12px; border: 1px solid #ddd;">Student Name</th>
-            <th style="padding: 12px; border: 1px solid #ddd;">Average Score</th>
-            
+            <th style="padding: 12px; border: 1px solid #ddd;">Progress</th>
+            <th style="padding: 12px; border: 1px solid #ddd;">Courses Generated</th>
         </tr>
     </thead>
     <tbody>
-        {% for student in top_performers %}
+        {% for student in student_progress %}
         <tr style="background: {% cycle '#f9fafb' 'white' %}; cursor: pointer;" 
             onmouseover="this.style.background='#e5e7eb'" 
             onmouseout="this.style.background='{% cycle '#f9fafb' 'white' %}'">
-            <td style="padding: 12px; border: 1px solid #ddd;">{{ forloop.counter }}</td>
-            <td style="padding: 12px; border: 1px solid #ddd;"><strong>{{ student.first_name }} {{ student.last_name }}</strong></td>
-            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.avg_score }}%</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.student_id }}</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">{{ student.first_name }} {{ student.last_name }}</td>
+            <td style="padding: 12px; border: 1px solid #ddd;">
+                <div style="background:#e5e7eb; border-radius: 6px; height: 10px; width:100%;">
+                    <div style="background:#2563eb; height:100%; width: {{ student.progress_percentage|default:0 }}%; border-radius: 6px;"></div>
+                </div>
+                <small>{{ student.progress_percentage|default:0 }}% complete</small>
+            </td>
+            <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
+                {{ student.courses_generated }}
+            </td>
         </tr>
         {% empty %}
         <tr>
-            <td colspan="5" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No data available</td>
+            <td colspan="4" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No student data available</td>
         </tr>
         {% endfor %}
     </tbody>
 </table>
 
                 </div>
+                
             </div>
+
+            <!-- Add the activity chart -->
+        <div class="chart-container">
+            <div class="table-header">
+                <h2 class="table-title">Student Activity (Last 7 Days)</h2>
+            </div>
+            <canvas id="activityChart" height="100"></canvas>
+        </div>
+            
+
+            <!-- Top Performing Students Tab -->
+<div id="top-students" class="tab-content">
+    <div class="welcome-banner">
+        <h1 class="welcome-title">Top Performing Students</h1>
+        <p class="welcome-subtitle">Top 10 highest achievers</p>
+    </div>
+    
+    <div class="table-container">
+        <div class="table-header">
+            <h2 class="table-title">Top 10 Performers</h2>
+        </div>
+        <table style="width:100%; border-collapse: collapse; margin-top: 15px; font-size: 14px; text-align: left;">
+            <thead>
+                <tr style="background: #2563eb; color: white;">
+                    <th style="padding: 12px; border: 1px solid #ddd;">Rank</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Student Name</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Average Score</th>
+                    <th style="padding: 12px; border: 1px solid #ddd;">Courses Generated</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for student in top_performers %}
+                <tr style="background: {% cycle '#f9fafb' 'white' %}; cursor: pointer;" 
+                    onmouseover="this.style.background='#e5e7eb'" 
+                    onmouseout="this.style.background='{% cycle '#f9fafb' 'white' %}'">
+                    <td style="padding: 12px; border: 1px solid #ddd;">{{ forloop.counter }}</td>
+                    <td style="padding: 12px; border: 1px solid #ddd;"><strong>{{ student.first_name }} {{ student.last_name }}</strong></td>
+                    <td style="padding: 12px; border: 1px solid #ddd;">{{ student.avg_score }}%</td>
+                    <td style="padding: 12px; border: 1px solid #ddd; text-align: center;">
+                        {{ student.generatedcourse_set.count }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="4" style="text-align:center; padding: 12px; border: 1px solid #ddd;">No data available</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
 
         </main>
     </div>
@@ -1002,18 +1020,67 @@
         <p style="margin:5px 0; font-size:13px; color:#d1d5db;">
             Adaptive E-Learning Platform | Powered by AI for Personalized Learning
         </p>
-        <div style="margin-top:10px;">
-            <a href="#" style="color:#93c5fd; margin:0 8px; text-decoration:none; font-size:14px;">Privacy Policy</a> |
-            <a href="#" style="color:#93c5fd; margin:0 8px; text-decoration:none; font-size:14px;">Terms</a> |
-            <a href="#" style="color:#93c5fd; margin:0 8px; text-decoration:none; font-size:14px;">Support</a>
-        </div>
     </div>
 </footer>
 
-<!-- Add this before </body> in your current template -->
-<script>
 
-    <script>
+<script>
+    // Add this script to your template
+document.addEventListener('DOMContentLoaded', function() {
+    // Activity chart
+    const activityCtx = document.getElementById('activityChart').getContext('2d');
+    const activityChart = new Chart(activityCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ date_labels|safe }},
+            datasets: [{
+                label: 'Active Students',
+                data: {{ activity_data }},
+                backgroundColor: 'rgba(37, 99, 235, 0.5)',
+                borderColor: 'rgba(37, 99, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Number of Students'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Date'
+                    }
+                }
+            }
+        }
+    });
+    
+    // Enhanced search functionality
+    const studentSearch = document.getElementById('studentSearch');
+    if (studentSearch) {
+        studentSearch.addEventListener('input', function() {
+            const searchTerm = this.value.toLowerCase().trim();
+            const rows = document.querySelectorAll('#user-management tbody tr');
+            
+            rows.forEach(row => {
+                const studentId = row.cells[0].textContent.toLowerCase();
+                const studentName = row.cells[1].textContent.toLowerCase();
+                
+                if (studentId.includes(searchTerm) || studentName.includes(searchTerm)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        });
+    }
+});
 document.addEventListener('DOMContentLoaded', function() {
     // Student search functionality
     const studentSearch = document.getElementById('studentSearch');
@@ -1142,415 +1209,415 @@ document.addEventListener('DOMContentLoaded', function() {
         tableContainer.appendChild(paginationContainer);
     }
 });
-</script>
-    // Enhance the showQuizDetails function
-function showQuizDetails(studentId, studentName) {
-    const modal = document.getElementById('quizModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
 
-    modalTitle.innerText = studentName + " - Quiz Performance";
-    modalBody.innerHTML = "<p>Loading quiz data...</p>";
-    modal.style.display = "flex";
+                // Enhance the showQuizDetails function
+            function showQuizDetails(studentId, studentName) {
+                const modal = document.getElementById('quizModal');
+                const modalTitle = document.getElementById('modalTitle');
+                const modalBody = document.getElementById('modalBody');
 
-    // Fetch quiz data via AJAX
-    fetch(`/admin/student-quizzes/${studentId}/`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.quizzes.length === 0) {
-            modalBody.innerHTML = "<p>No quiz attempts available.</p>";
-            return;
-        }
+                modalTitle.innerText = studentName + " - Quiz Performance";
+                modalBody.innerHTML = "<p>Loading quiz data...</p>";
+                modal.style.display = "flex";
 
-        // Calculate average score
-        const totalScore = data.quizzes.reduce((sum, quiz) => sum + quiz.score, 0);
-        const averageScore = totalScore / data.quizzes.length;
+                // Fetch quiz data via AJAX
+                fetch(`/admin/student-quizzes/${studentId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.quizzes.length === 0) {
+                        modalBody.innerHTML = "<p>No quiz attempts available.</p>";
+                        return;
+                    }
 
-        let tableHtml = `
-        <div class="quiz-summary">
-            <p><strong>Total Quizzes Attempted:</strong> ${data.quizzes.length}</p>
-            <p><strong>Average Score:</strong> ${averageScore.toFixed(1)}%</p>
-        </div>
-        <table style="width:100%; border-collapse: collapse; font-size: 14px; text-align:left; margin-top: 15px;">
-            <thead>
-                <tr style="background:#2563eb; color:white;">
-                    <th style="padding:8px; border:1px solid #ddd;">Quiz Title</th>
-                    <th style="padding:8px; border:1px solid #ddd;">Score</th>
-                    <th style="padding:8px; border:1px solid #ddd;">Performance</th>
-                    <th style="padding:8px; border:1px solid #ddd;">Date Attempted</th>
-                </tr>
-            </thead>
-            <tbody>`;
+                    // Calculate average score
+                    const totalScore = data.quizzes.reduce((sum, quiz) => sum + quiz.score, 0);
+                    const averageScore = totalScore / data.quizzes.length;
 
-        data.quizzes.forEach(q => {
-            let performanceClass = '';
-            if (q.score >= 80) performanceClass = 'high-score';
-            else if (q.score >= 60) performanceClass = 'medium-score';
-            else performanceClass = 'low-score';
-            
-            tableHtml += `<tr>
-                <td style="padding:8px; border:1px solid #ddd;">${q.title}</td>
-                <td style="padding:8px; border:1px solid #ddd;">${q.score}%</td>
-                <td style="padding:8px; border:1px solid #ddd;">
-                    <div class="progress-bar-small">
-                        <div class="progress-fill-small ${performanceClass}" style="width: ${q.score}%"></div>
+                    let tableHtml = `
+                    <div class="quiz-summary">
+                        <p><strong>Total Quizzes Attempted:</strong> ${data.quizzes.length}</p>
+                        <p><strong>Average Score:</strong> ${averageScore.toFixed(1)}%</p>
                     </div>
-                </td>
-                <td style="padding:8px; border:1px solid #ddd;">${q.date_attempted || 'N/A'}</td>
-            </tr>`;
-        });
+                    <table style="width:100%; border-collapse: collapse; font-size: 14px; text-align:left; margin-top: 15px;">
+                        <thead>
+                            <tr style="background:#2563eb; color:white;">
+                                <th style="padding:8px; border:1px solid #ddd;">Quiz Title</th>
+                                <th style="padding:8px; border:1px solid #ddd;">Score</th>
+                                <th style="padding:8px; border:1px solid #ddd;">Performance</th>
+                                <th style="padding:8px; border:1px solid #ddd;">Date Attempted</th>
+                            </tr>
+                        </thead>
+                        <tbody>`;
 
-        tableHtml += '</tbody></table>';
-        modalBody.innerHTML = tableHtml;
-    })
-    .catch(error => {
-        console.error(error);
-        modalBody.innerHTML = "<p>Error loading quiz data.</p>";
-    });
-}
+                    data.quizzes.forEach(q => {
+                        let performanceClass = '';
+                        if (q.score >= 80) performanceClass = 'high-score';
+                        else if (q.score >= 60) performanceClass = 'medium-score';
+                        else performanceClass = 'low-score';
+                        
+                        tableHtml += `<tr>
+                            <td style="padding:8px; border:1px solid #ddd;">${q.title}</td>
+                            <td style="padding:8px; border:1px solid #ddd;">${q.score}%</td>
+                            <td style="padding:8px; border:1px solid #ddd;">
+                                <div class="progress-bar-small">
+                                    <div class="progress-fill-small ${performanceClass}" style="width: ${q.score}%"></div>
+                                </div>
+                            </td>
+                            <td style="padding:8px; border:1px solid #ddd;">${q.date_attempted || 'N/A'}</td>
+                        </tr>`;
+                    });
 
-// Add CSS for quiz performance indicators
-const quizModalStyle = `
-<style>
-.high-score {
-    background: #4caf50 !important;
-}
+                    tableHtml += '</tbody></table>';
+                    modalBody.innerHTML = tableHtml;
+                })
+                .catch(error => {
+                    console.error(error);
+                    modalBody.innerHTML = "<p>Error loading quiz data.</p>";
+                });
+            }
 
-.medium-score {
-    background: #ff9800 !important;
-}
+            // Add CSS for quiz performance indicators
+            const quizModalStyle = `
+            <style>
+            .high-score {
+                background: #4caf50 !important;
+            }
 
-.low-score {
-    background: #f44336 !important;
-}
+            .medium-score {
+                background: #ff9800 !important;
+            }
 
-.quiz-summary {
-    margin-bottom: 15px;
-    padding: 10px;
-    background: #f5f5f5;
-    border-radius: 6px;
-}
+            .low-score {
+                background: #f44336 !important;
+            }
 
-.quiz-summary p {
-    margin: 5px 0;
-}
-</style>
-`;
+            .quiz-summary {
+                margin-bottom: 15px;
+                padding: 10px;
+                background: #f5f5f5;
+                border-radius: 6px;
+            }
 
-document.head.insertAdjacentHTML('beforeend', quizModalStyle);
+            .quiz-summary p {
+                margin: 5px 0;
+            }
+            </style>
+            `;
 
-    // Add to your JavaScript in admin_dashboard.html
-function showProgressDetails(studentId, studentName) {
-    const modal = document.getElementById('progressModal');
-    const modalTitle = document.getElementById('progressModalTitle');
-    const modalBody = document.getElementById('progressModalBody');
+            document.head.insertAdjacentHTML('beforeend', quizModalStyle);
 
-    modalTitle.innerText = studentName + " - Progress Details";
-    modalBody.innerHTML = "<p>Loading progress data...</p>";
-    modal.style.display = "flex";
+                // Add to your JavaScript in admin_dashboard.html
+            function showProgressDetails(studentId, studentName) {
+                const modal = document.getElementById('progressModal');
+                const modalTitle = document.getElementById('progressModalTitle');
+                const modalBody = document.getElementById('progressModalBody');
 
-    // Fetch progress data via AJAX
-    fetch(`/admin/student-progress/${studentId}/`)
-    .then(response => response.json())
-    .then(data => {
-        if (!data.success) {
-            modalBody.innerHTML = `<p>Error: ${data.error}</p>`;
-            return;
-        }
+                modalTitle.innerText = studentName + " - Progress Details";
+                modalBody.innerHTML = "<p>Loading progress data...</p>";
+                modal.style.display = "flex";
 
-        let html = `<div class="student-info">
-            <h3>${data.student.name}</h3>
-            <p>Email: ${data.student.email}</p>
-        </div>`;
+                // Fetch progress data via AJAX
+                fetch(`/admin/student-progress/${studentId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        modalBody.innerHTML = `<p>Error: ${data.error}</p>`;
+                        return;
+                    }
 
-        // Regular courses progress
-        if (data.regular_progress.length > 0) {
-            html += `<h4>Regular Courses Progress</h4>
-            <table class="progress-table">
-                <thead>
-                    <tr>
-                        <th>Course</th>
-                        <th>Progress</th>
-                        <th>Completed</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-            
-            data.regular_progress.forEach(course => {
-                html += `<tr>
-                    <td>${course.course}</td>
-                    <td>
-                        <div class="progress-bar-small">
-                            <div class="progress-fill-small" style="width: ${course.progress}%"></div>
-                        </div>
-                        ${course.progress}%
-                    </td>
-                    <td>${course.completed}/${course.total} lessons</td>
-                </tr>`;
-            });
-            
-            html += `</tbody></table>`;
-        }
+                    let html = `<div class="student-info">
+                        <h3>${data.student.name}</h3>
+                        <p>Email: ${data.student.email}</p>
+                    </div>`;
 
-        // Generated courses progress
-        if (data.generated_progress.length > 0) {
-            html += `<h4>AI-Generated Courses Progress</h4>
-            <table class="progress-table">
-                <thead>
-                    <tr>
-                        <th>Course</th>
-                        <th>Progress</th>
-                        <th>Completed</th>
-                        <th>Avg Score</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-            
-            data.generated_progress.forEach(course => {
-                html += `<tr>
-                    <td>${course.course}</td>
-                    <td>
-                        <div class="progress-bar-small">
-                            <div class="progress-fill-small" style="width: ${course.progress}%"></div>
-                        </div>
-                        ${course.progress}%
-                    </td>
-                    <td>${course.completed}/${course.total} topics</td>
-                    <td>${course.avg_score}%</td>
-                </tr>`;
-            });
-            
-            html += `</tbody></table>`;
-        }
+                    // Regular courses progress
+                    if (data.regular_progress.length > 0) {
+                        html += `<h4>Regular Courses Progress</h4>
+                        <table class="progress-table">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Progress</th>
+                                    <th>Completed</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                        
+                        data.regular_progress.forEach(course => {
+                            html += `<tr>
+                                <td>${course.course}</td>
+                                <td>
+                                    <div class="progress-bar-small">
+                                        <div class="progress-fill-small" style="width: ${course.progress}%"></div>
+                                    </div>
+                                    ${course.progress}%
+                                </td>
+                                <td>${course.completed}/${course.total} lessons</td>
+                            </tr>`;
+                        });
+                        
+                        html += `</tbody></table>`;
+                    }
 
-        // Quiz performance
-        if (data.quiz_performance.length > 0) {
-            html += `<h4>Quiz Performance</h4>
-            <table class="progress-table">
-                <thead>
-                    <tr>
-                        <th>Course</th>
-                        <th>Topic</th>
-                        <th>Score</th>
-                        <th>Completed</th>
-                    </tr>
-                </thead>
-                <tbody>`;
-            
-            data.quiz_performance.forEach(quiz => {
-                html += `<tr>
-                    <td>${quiz.course}</td>
-                    <td>${quiz.topic}</td>
-                    <td>${quiz.score}%</td>
-                    <td>${quiz.completed_at}</td>
-                </tr>`;
-            });
-            
-            html += `</tbody></table>`;
-        }
+                    // Generated courses progress
+                    if (data.generated_progress.length > 0) {
+                        html += `<h4>AI-Generated Courses Progress</h4>
+                        <table class="progress-table">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Progress</th>
+                                    <th>Completed</th>
+                                    <th>Avg Score</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                        
+                        data.generated_progress.forEach(course => {
+                            html += `<tr>
+                                <td>${course.course}</td>
+                                <td>
+                                    <div class="progress-bar-small">
+                                        <div class="progress-fill-small" style="width: ${course.progress}%"></div>
+                                    </div>
+                                    ${course.progress}%
+                                </td>
+                                <td>${course.completed}/${course.total} topics</td>
+                                <td>${course.avg_score}%</td>
+                            </tr>`;
+                        });
+                        
+                        html += `</tbody></table>`;
+                    }
 
-        modalBody.innerHTML = html;
-    })
-    .catch(error => {
-        console.error(error);
-        modalBody.innerHTML = "<p>Error loading progress data.</p>";
-    });
-}
+                    // Quiz performance
+                    if (data.quiz_performance.length > 0) {
+                        html += `<h4>Quiz Performance</h4>
+                        <table class="progress-table">
+                            <thead>
+                                <tr>
+                                    <th>Course</th>
+                                    <th>Topic</th>
+                                    <th>Score</th>
+                                    <th>Completed</th>
+                                </tr>
+                            </thead>
+                            <tbody>`;
+                        
+                        data.quiz_performance.forEach(quiz => {
+                            html += `<tr>
+                                <td>${quiz.course}</td>
+                                <td>${quiz.topic}</td>
+                                <td>${quiz.score}%</td>
+                                <td>${quiz.completed_at}</td>
+                            </tr>`;
+                        });
+                        
+                        html += `</tbody></table>`;
+                    }
 
-// Add CSS for the progress modal and tables
-const progressModalStyle = `
-<style>
-.progress-modal .modal-content {
-    max-width: 800px;
-}
+                    modalBody.innerHTML = html;
+                })
+                .catch(error => {
+                    console.error(error);
+                    modalBody.innerHTML = "<p>Error loading progress data.</p>";
+                });
+            }
 
-.progress-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 15px 0;
-}
+            // Add CSS for the progress modal and tables
+            const progressModalStyle = `
+            <style>
+            .progress-modal .modal-content {
+                max-width: 800px;
+            }
 
-.progress-table th, .progress-table td {
-    padding: 10px;
-    border: 1px solid #e0e0e0;
-    text-align: left;
-}
+            .progress-table {
+                width: 100%;
+                border-collapse: collapse;
+                margin: 15px 0;
+            }
 
-.progress-table th {
-    background-color: #f5f5f5;
-    font-weight: 600;
-}
+            .progress-table th, .progress-table td {
+                padding: 10px;
+                border: 1px solid #e0e0e0;
+                text-align: left;
+            }
 
-.progress-bar-small {
-    height: 8px;
-    background: #e0e0e0;
-    border-radius: 4px;
-    margin: 5px 0;
-    width: 100px;
-    display: inline-block;
-}
+            .progress-table th {
+                background-color: #f5f5f5;
+                font-weight: 600;
+            }
 
-.progress-fill-small {
-    height: 100%;
-    background: #2563eb;
-    border-radius: 4px;
-}
+            .progress-bar-small {
+                height: 8px;
+                background: #e0e0e0;
+                border-radius: 4px;
+                margin: 5px 0;
+                width: 100px;
+                display: inline-block;
+            }
 
-.student-info {
-    margin-bottom: 20px;
-    padding-bottom: 15px;
-    border-bottom: 1px solid #e0e0e0;
-}
+            .progress-fill-small {
+                height: 100%;
+                background: #2563eb;
+                border-radius: 4px;
+            }
 
-.student-info h3 {
-    margin-bottom: 5px;
-    color: #1a237e;
-}
+            .student-info {
+                margin-bottom: 20px;
+                padding-bottom: 15px;
+                border-bottom: 1px solid #e0e0e0;
+            }
 
-.student-info p {
-    margin: 0;
-    color: #666;
-}
-</style>
-`;
+            .student-info h3 {
+                margin-bottom: 5px;
+                color: #1a237e;
+            }
 
-// Add the progress modal HTML
-const progressModalHTML = `
-<div id="progressModal" class="modal">
-    <div class="modal-content progress-modal">
-        <div class="modal-header">
-            <h2 class="modal-title" id="progressModalTitle">Student Progress</h2>
-            <button class="modal-close" onclick="closeProgressModal()">&times;</button>
-        </div>
-        <div class="modal-body" id="progressModalBody">
-            <p>Loading progress data...</p>
-        </div>
-        <div class="modal-footer">
-            <button class="btn btn-sm btn-danger" onclick="closeProgressModal()">Close</button>
-        </div>
-    </div>
-</div>
-`;
+            .student-info p {
+                margin: 0;
+                color: #666;
+            }
+            </style>
+            `;
 
-// Add the modal to the document
-document.body.insertAdjacentHTML('beforeend', progressModalHTML);
-document.head.insertAdjacentHTML('beforeend', progressModalStyle);
+            // Add the progress modal HTML
+            const progressModalHTML = `
+            <div id="progressModal" class="modal">
+                <div class="modal-content progress-modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title" id="progressModalTitle">Student Progress</h2>
+                        <button class="modal-close" onclick="closeProgressModal()">&times;</button>
+                    </div>
+                    <div class="modal-body" id="progressModalBody">
+                        <p>Loading progress data...</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-sm btn-danger" onclick="closeProgressModal()">Close</button>
+                    </div>
+                </div>
+            </div>
+            `;
 
-function closeProgressModal() {
-    document.getElementById('progressModal').style.display = "none";
-}
+            // Add the modal to the document
+            document.body.insertAdjacentHTML('beforeend', progressModalHTML);
+            document.head.insertAdjacentHTML('beforeend', progressModalStyle);
 
-// Close modal on outside click
-window.onclick = function(event) {
-    const modal = document.getElementById('progressModal');
-    if (event.target === modal) {
-        modal.style.display = "none";
-    }
-}
-    // Sidebar toggle for mobile
-    const mobileToggle = document.getElementById('mobile-toggle');
-    const sidebar = document.getElementById('sidebar');
-    mobileToggle.addEventListener('click', () => {
-        sidebar.classList.toggle('active');
-    });
+            function closeProgressModal() {
+                document.getElementById('progressModal').style.display = "none";
+            }
 
-    // Tab switching
-    const menuLinks = document.querySelectorAll('.menu-link');
-    const tabContents = document.querySelectorAll('.tab-content');
-
-    menuLinks.forEach(link => {
-        link.addEventListener('click', (e) => {
-            e.preventDefault();
-            // Remove active class from all menu links
-            menuLinks.forEach(l => l.classList.remove('active'));
-            // Add active class to clicked link
-            link.classList.add('active');
-
-            // Hide all tab contents
-            tabContents.forEach(tab => tab.classList.remove('active'));
-            // Show selected tab
-            const targetTab = document.getElementById(link.dataset.tab);
-            if (targetTab) targetTab.classList.add('active');
-
-            // Close sidebar on mobile
-            if (window.innerWidth <= 1024) sidebar.classList.remove('active');
-        });
-    });
-
-    // Student search filter
-    const searchInput = document.getElementById('studentSearch');
-    if (searchInput) {
-        searchInput.addEventListener('keyup', () => {
-            const filter = searchInput.value.toLowerCase();
-            const rows = document.querySelectorAll('#user-management tbody tr');
-            rows.forEach(row => {
-                const nameCell = row.cells[1];
-                const text = nameCell ? nameCell.textContent.toLowerCase() : '';
-                if (text.indexOf(filter) > -1) {
-                    row.style.display = '';
-                } else {
-                    row.style.display = 'none';
+            // Close modal on outside click
+            window.onclick = function(event) {
+                const modal = document.getElementById('progressModal');
+                if (event.target === modal) {
+                    modal.style.display = "none";
                 }
-            });
-        });
-    }
-</script>
-<script>
-function showQuizDetails(studentId, studentName) {
-    const modal = document.getElementById('quizModal');
-    const modalTitle = document.getElementById('modalTitle');
-    const modalBody = document.getElementById('modalBody');
+            }
+                // Sidebar toggle for mobile
+                const mobileToggle = document.getElementById('mobile-toggle');
+                const sidebar = document.getElementById('sidebar');
+                mobileToggle.addEventListener('click', () => {
+                    sidebar.classList.toggle('active');
+                });
 
-    modalTitle.innerText = studentName + " - Quiz Progress";
-    modalBody.innerHTML = "<p>Loading quiz data...</p>";
-    modal.style.display = "flex";
+                // Tab switching
+                const menuLinks = document.querySelectorAll('.menu-link');
+                const tabContents = document.querySelectorAll('.tab-content');
 
-    // Fetch quiz data via AJAX
-    fetch(`/admin/student-quizzes/${studentId}/`)
-    .then(response => response.json())
-    .then(data => {
-        if (data.quizzes.length === 0) {
-            modalBody.innerHTML = "<p>No quiz attempts available.</p>";
-            return;
-        }
+                menuLinks.forEach(link => {
+                    link.addEventListener('click', (e) => {
+                        e.preventDefault();
+                        // Remove active class from all menu links
+                        menuLinks.forEach(l => l.classList.remove('active'));
+                        // Add active class to clicked link
+                        link.classList.add('active');
 
-        let tableHtml = '<table style="width:100%; border-collapse: collapse; font-size: 14px; text-align:left;">';
-        tableHtml += '<thead><tr style="background:#2563eb; color:white;">';
-        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Quiz Title</th>';
-        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Score</th>';
-        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Completed</th>';
-        tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Date Attempted</th>';
-        tableHtml += '</tr></thead><tbody>';
+                        // Hide all tab contents
+                        tabContents.forEach(tab => tab.classList.remove('active'));
+                        // Show selected tab
+                        const targetTab = document.getElementById(link.dataset.tab);
+                        if (targetTab) targetTab.classList.add('active');
 
-        data.quizzes.forEach(q => {
-            tableHtml += `<tr style="background:#f9fafb;">`;
-            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.title}</td>`;
-            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.score}%</td>`;
-            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.completed ? 'Yes' : 'No'}</td>`;
-            tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.date_attempted || 'N/A'}</td>`;
-            tableHtml += `</tr>`;
-        });
+                        // Close sidebar on mobile
+                        if (window.innerWidth <= 1024) sidebar.classList.remove('active');
+                    });
+                });
 
-        tableHtml += '</tbody></table>';
-        modalBody.innerHTML = tableHtml;
-    })
-    .catch(error => {
-        console.error(error);
-        modalBody.innerHTML = "<p>Error loading quiz data.</p>";
-    });
-}
+                // Student search filter
+                const searchInput = document.getElementById('studentSearch');
+                if (searchInput) {
+                    searchInput.addEventListener('keyup', () => {
+                        const filter = searchInput.value.toLowerCase();
+                        const rows = document.querySelectorAll('#user-management tbody tr');
+                        rows.forEach(row => {
+                            const nameCell = row.cells[1];
+                            const text = nameCell ? nameCell.textContent.toLowerCase() : '';
+                            if (text.indexOf(filter) > -1) {
+                                row.style.display = '';
+                            } else {
+                                row.style.display = 'none';
+                            }
+                        });
+                    });
+                }
+            </script>
+            <script>
+            function showQuizDetails(studentId, studentName) {
+                const modal = document.getElementById('quizModal');
+                const modalTitle = document.getElementById('modalTitle');
+                const modalBody = document.getElementById('modalBody');
 
-function closeModal() {
-    document.getElementById('quizModal').style.display = "none";
-}
+                modalTitle.innerText = studentName + " - Quiz Progress";
+                modalBody.innerHTML = "<p>Loading quiz data...</p>";
+                modal.style.display = "flex";
 
-// Close modal on outside click
-window.onclick = function(event) {
-    const modal = document.getElementById('quizModal');
-    if (event.target === modal) {
-        modal.style.display = "none";
-    }
-}
+                // Fetch quiz data via AJAX
+                fetch(`/admin/student-quizzes/${studentId}/`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.quizzes.length === 0) {
+                        modalBody.innerHTML = "<p>No quiz attempts available.</p>";
+                        return;
+                    }
+
+                    let tableHtml = '<table style="width:100%; border-collapse: collapse; font-size: 14px; text-align:left;">';
+                    tableHtml += '<thead><tr style="background:#2563eb; color:white;">';
+                    tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Quiz Title</th>';
+                    tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Score</th>';
+                    tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Completed</th>';
+                    tableHtml += '<th style="padding:8px; border:1px solid #ddd;">Date Attempted</th>';
+                    tableHtml += '</tr></thead><tbody>';
+
+                    data.quizzes.forEach(q => {
+                        tableHtml += `<tr style="background:#f9fafb;">`;
+                        tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.title}</td>`;
+                        tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.score}%</td>`;
+                        tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.completed ? 'Yes' : 'No'}</td>`;
+                        tableHtml += `<td style="padding:8px; border:1px solid #ddd;">${q.date_attempted || 'N/A'}</td>`;
+                        tableHtml += `</tr>`;
+                    });
+
+                    tableHtml += '</tbody></table>';
+                    modalBody.innerHTML = tableHtml;
+                })
+                .catch(error => {
+                    console.error(error);
+                    modalBody.innerHTML = "<p>Error loading quiz data.</p>";
+                });
+            }
+
+            function closeModal() {
+                document.getElementById('quizModal').style.display = "none";
+            }
+
+            // Close modal on outside click
+            window.onclick = function(event) {
+                const modal = document.getElementById('quizModal');
+                if (event.target === modal) {
+                    modal.style.display = "none";
+                }
+            }
 </script>
 
 

@@ -2,6 +2,7 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
 from django.utils import timezone
+import time
 
 from django.http import JsonResponse, Http404
 from django.views.decorators.csrf import csrf_exempt, csrf_protect
@@ -9,7 +10,7 @@ from django.views.decorators.http import require_POST
 from django.conf import settings
 from django.db.models import Q
 from django.db import transaction
-from .models import Course, Module, Lesson, GeneratedCourse, GeneratedChapter, GeneratedTopic, GeneratedQuiz, GeneratedQuestion, GeneratedAnswer, GeneratedCourseProgress, CompletedTopic, GeneratedTopicCompletion
+from .models import Course, Module, Lesson, GeneratedCourse, GeneratedChapter, GeneratedTopic, GeneratedQuiz, GeneratedQuestion, GeneratedAnswer, GeneratedCourseProgress, GeneratedTopicCompletion
 from progress.models import UserProgress, ModuleProgress
 from users.decorators import prevent_after_logout
 import json
@@ -18,8 +19,6 @@ import re
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 import logging
 logger = logging.getLogger(__name__)
-
-
 
 
 @login_required
@@ -115,56 +114,51 @@ def dashboard_view(request):
 
 
 @login_required
-def learning_view(request, lesson_id=None):
-    student = request.user
-    
-    # === Check if this is a generated course topic ===
+def learning_view(request):
     generated_course_id = request.GET.get('generated_course_id')
-    generated_topic_id = request.GET.get('topic_id')
+    topic_id = request.GET.get('topic_id')
     
-    if generated_course_id and generated_topic_id:
+    context = {}
+    
+    # Handle generated courses
+    if generated_course_id and topic_id:
         try:
-            course = get_object_or_404(GeneratedCourse, id=generated_course_id, user=student)
-            topic = get_object_or_404(GeneratedTopic, id=generated_topic_id, chapter__course=course)
+            course = get_object_or_404(GeneratedCourse, id=generated_course_id, user=request.user)
+            topic = get_object_or_404(GeneratedTopic, id=topic_id, chapter__course=course)
+            chapter = topic.chapter
             
-            # Check if this is a regenerated topic and get the original if needed
-            original_topic = None
-            if hasattr(topic, 'is_regenerated') and topic.is_regenerated and hasattr(topic, 'original_topic') and topic.original_topic:
-                original_topic = topic.original_topic
+            # Get all topics in the course (single chapter)
+            all_topics = GeneratedTopic.objects.filter(chapter__course=course).order_by('order')
+            
+            # Find current topic position
+            topic_index = None
+            for idx, t in enumerate(all_topics):
+                if t.id == topic.id:
+                    topic_index = idx
+                    break
+            
+            # Get previous and next topics
+            previous_topic = None
+            next_topic = None
+            
+            if topic_index is not None:
+                if topic_index > 0:
+                    previous_topic = all_topics[topic_index - 1]
+                
+                if topic_index < len(all_topics) - 1:
+                    next_topic = all_topics[topic_index + 1]
             
             # Check if topic is completed
+            topic_completed = False
+            completion = None
             try:
-                completion = GeneratedTopicCompletion.objects.get(student=student, topic=topic)
-                topic_completed = completion.passed if hasattr(completion, 'passed') else False
+                completion = GeneratedTopicCompletion.objects.get(student=request.user, topic=topic)
+                topic_completed = True
+                context['completion'] = completion
             except GeneratedTopicCompletion.DoesNotExist:
-                topic_completed = False
+                pass
             
-            # --- PROGRESS AND NAVIGATION LOGIC FOR GENERATED COURSES ---
-            progress, created = GeneratedCourseProgress.objects.get_or_create(
-                student=student, 
-                course=course,
-                defaults={'last_accessed_topic': topic}
-            )
-            if not created:
-                progress.last_accessed_topic = topic
-                progress.last_accessed_at = timezone.now()
-                progress.save()
-
-            total_topics = GeneratedTopic.objects.filter(chapter__course=course).count()
-            completed_topics_count = GeneratedTopicCompletion.objects.filter(
-                student=student,
-                topic__chapter__course=course,
-                passed=True
-            ).count()
-            progress_percentage = int((completed_topics_count / total_topics) * 100) if total_topics > 0 else 0
-            
-            all_topics = GeneratedTopic.objects.filter(chapter__course=course).order_by('chapter__order', 'order')
-            topic_list = list(all_topics)
-            current_index = topic_list.index(topic) if topic in topic_list else -1
-            
-            previous_topic = topic_list[current_index - 1] if current_index > 0 else None
-            next_topic = topic_list[current_index + 1] if current_index < len(topic_list) - 1 else None
-            
+            # Get quiz questions if available
             quiz_questions = []
             if hasattr(topic, 'quiz'):
                 questions_qs = topic.quiz.questions.all().prefetch_related('answers')
@@ -175,10 +169,120 @@ def learning_view(request, lesson_id=None):
                     except GeneratedAnswer.DoesNotExist:
                         question.correct_answer_key = ''
                 quiz_questions = list(questions_qs)
+            
+            # Update or create course progress
+            progress, created = GeneratedCourseProgress.objects.get_or_create(
+                student=request.user,
+                course=course,
+                defaults={'last_accessed_topic': topic}
+            )
+            if not created:
+                progress.last_accessed_topic = topic
+                progress.save()
+            
+            # Calculate progress percentage as a whole number
+            total_topics = GeneratedTopic.objects.filter(chapter__course=course).count()
+            completed_topics = GeneratedTopicCompletion.objects.filter(
+                student=request.user, 
+                topic__chapter__course=course,
+                score__gte=50  # Only count topics passed with 50% or higher
+            ).count()
+            
+            # Calculate percentage and convert to integer (whole number)
+            if total_topics > 0:
+                progress_percentage = int((completed_topics / total_topics) * 100)
+            else:
+                progress_percentage = 0
+            
+            # Check if this is a regenerated topic
+            original_topic = None
+            if topic.is_regenerated and hasattr(topic, 'original_topic'):
+                original_topic = topic.original_topic
+            
+            # Check if this topic needs a reinforcement lesson
+            needs_reinforcement = False
+            reinforcement_topic = None
+            
+            # If this is the last topic in the course and student has completed all topics
+            if topic_index == len(all_topics) - 1 and topic_completed:
+                # Check if student passed all topics in this course
+                all_passed = True
+                for course_topic in all_topics:
+                    try:
+                        topic_comp = GeneratedTopicCompletion.objects.get(
+                            student=request.user, 
+                            topic=course_topic
+                        )
+                        if topic_comp.score < 50:
+                            all_passed = False
+                            break
+                    except GeneratedTopicCompletion.DoesNotExist:
+                        all_passed = False
+                        break
                 
-            return render(request, 'learning.html', {
+                # If student didn't pass all topics, they need reinforcement
+                if not all_passed:
+                    needs_reinforcement = True
+                    
+                    # Check if reinforcement topic already exists
+                    reinforcement_topic = GeneratedTopic.objects.filter(
+                        chapter__course=course,
+                        is_reinforcement=True
+                    ).first()
+                    
+                    # If no reinforcement topic exists, create one
+                    if not reinforcement_topic:
+                        reinforcement_topic = create_reinforcement_topic(course, request.user)
+            
+            # Determine which topics are unlocked
+            unlocked_topics = []
+            for idx, t in enumerate(all_topics):
+                # First topic is always unlocked
+                if idx == 0:
+                    unlocked_topics.append(t.id)
+                    continue
+                
+                # Check if previous topic is completed
+                prev_topic = all_topics[idx - 1]
+                try:
+                    comp = GeneratedTopicCompletion.objects.get(
+                        student=request.user, 
+                        topic=prev_topic
+                    )
+                    if comp.score >= 50:  # Passed
+                        unlocked_topics.append(t.id)
+                except GeneratedTopicCompletion.DoesNotExist:
+                    # Previous topic not completed
+                    pass
+            
+            # Check if user is trying to access a locked topic
+            if topic.id not in unlocked_topics:
+                # Find the first incomplete topic
+                first_incomplete_topic = None
+                for t in all_topics:
+                    if t.id in unlocked_topics:
+                        try:
+                            completion = GeneratedTopicCompletion.objects.get(student=request.user, topic=t)
+                            if completion.score < 50:  # Not passed
+                                first_incomplete_topic = t
+                                break
+                        except GeneratedTopicCompletion.DoesNotExist:
+                            first_incomplete_topic = t
+                            break
+                
+                if first_incomplete_topic:
+                    return redirect(f'/learning/?generated_course_id={course.id}&topic_id={first_incomplete_topic.id}')
+                else:
+                    # This shouldn't happen, but fallback to first topic
+                    first_topic = all_topics.first()
+                    if first_topic:
+                        return redirect(f'/learning/?generated_course_id={course.id}&topic_id={first_topic.id}')
+                
+                return redirect('dashboard')
+            
+            context.update({
                 'course': course,
-                'module': topic.chapter,
+                'module': chapter,
                 'lesson': topic,
                 'original_topic': original_topic,
                 'progress_percentage': progress_percentage,
@@ -188,239 +292,311 @@ def learning_view(request, lesson_id=None):
                 'quiz_questions': quiz_questions,
                 'topic_completed': topic_completed,
                 'is_regenerated': topic.is_regenerated if hasattr(topic, 'is_regenerated') else False,
+                'needs_reinforcement': needs_reinforcement,
+                'reinforcement_topic': reinforcement_topic,
+                'unlocked_topics': unlocked_topics,
+                'all_topics': all_topics,
             })
             
-        except (GeneratedCourse.DoesNotExist, GeneratedTopic.DoesNotExist):
-            raise Http404("Course or topic not found")
+            return render(request, 'learning.html', context)
+            
         except Exception as e:
-            # Log the error and return a user-friendly message
-            logger.error(f"Error in learning_view (generated course): {str(e)}")
-            return render(request, 'error.html', {
-                'error_message': 'An error occurred while loading the lesson. Please try again.'
-            })
+            logger.error(f"Error in learning_view for generated course: {str(e)}")
+            return redirect('dashboard')
     
-    # === Regular lessons ===
-    try:
-        if lesson_id:
-            lesson = get_object_or_404(Lesson, id=lesson_id)
-        else:
-            incomplete_lessons = Lesson.objects.exclude(
-                progress__student=student,
-                progress__is_completed=True
-            ).order_by('module__order', 'order')
-            
-            lesson = incomplete_lessons.first()
-            
-            if not lesson:
-                lesson = Lesson.objects.order_by('module__order', 'order').first()
-            
-            if lesson:
-                return redirect('learning', lesson_id=lesson.id)
-            else:
-                return redirect('dashboard')
+    # Invalid parameters
+    return redirect('dashboard')
+
         
-        progress, created = UserProgress.objects.get_or_create(
-            student=student,
-            lesson=lesson,
-            defaults={'last_accessed': timezone.now()}
-        )
-        if not created:
-            progress.last_accessed = timezone.now()
-            progress.save()
-        
-        module = lesson.module
-        completed_lessons_count = UserProgress.objects.filter(
-            student=student,
-            lesson__module=module,
-            is_completed=True
-        ).count()
-        total_lessons_count = module.lessons.count()
-        progress_percentage = int((completed_lessons_count / total_lessons_count) * 100) if total_lessons_count else 0
-        
-        def get_next_lesson(student, current_lesson):
-            next_lesson = Lesson.objects.filter(
-                module__order__gte=current_lesson.module.order,
-                order__gt=current_lesson.order
-            ).order_by('module__order', 'order').first()
-            return next_lesson
-        
-        def get_previous_lesson(student, current_lesson):
-            previous_lesson = Lesson.objects.filter(
-                module__order__lte=current_lesson.module.order,
-                order__lt=current_lesson.order
-            ).order_by('-module__order', '-order').first()
-            return previous_lesson
-            
-        previous_lesson = get_previous_lesson(student, lesson)
-        next_lesson = get_next_lesson(student, lesson)
-        
-        return render(request, 'learning.html', {
-            'lesson': lesson,
-            'module': module,
-            'progress_percentage': progress_percentage,
-            'previous_lesson': previous_lesson,
-            'next_lesson': next_lesson,
-            'is_generated': False,
-            'topic_completed': False,  # Not applicable for regular lessons
-            'is_regenerated': False,   # Not applicable for regular lessons
-        })
-        
-    except Exception as e:
-        # Log the error and return a user-friendly message
-        logger.error(f"Error in learning_view (regular lesson): {str(e)}")
-        return render(request, 'error.html', {
-            'error_message': 'An error occurred while loading the lesson. Please try again.'
-        })
-    
-@csrf_protect
 @require_POST
 @login_required
+@csrf_protect
 def generate_course(request):
     try:
-        # Parse the request data
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({'success': False, 'error': 'Invalid JSON data.'}, status=400)
-            
-        lesson_topic = data.get('name', '').strip()
-        if not lesson_topic:
-            return JsonResponse({'success': False, 'error': 'Lesson topic is required.'}, status=400)
+        data = json.loads(request.body)
+        original_title = data.get('name')
+        level = data.get('level')
+        lessons = data.get('lessons', [])
+        no_of_chapters = 1
 
-        description = data.get('description', '').strip()
-        no_of_chapters = max(1, min(int(data.get('noOfChapters', 1)), 10))
-        level = data.get('level', 'beginner')
+        if not original_title or not level:
+            return JsonResponse({'success': False, 'error': 'Course name and level are required'}, status=400)
 
-        # Check API key
-        if not settings.GEMINI_API_KEY:
-            return JsonResponse({'success': False, 'error': 'API key not configured.'}, status=500)
+        # Generate a unique course title
+        base_title = original_title
+        counter = 1
+        while True:
+            if not GeneratedCourse.objects.filter(user=request.user, title=base_title).exists():
+                break
+            base_title = f"{original_title} ({counter})"
+            counter += 1
 
-        # Strict C++ AI prompt
-        user_prompt = f"""
-        Generate a comprehensive and detailed lesson plan for a {level} level C++ course on the topic "{lesson_topic}".
-        The course should have exactly {no_of_chapters} chapters.
-        Each chapter must have a title, description, and 3-5 sub-topics.
-        Each sub-topic should have detailed content (min 250 words) with C++ code examples in markdown.
-        Include a multiple-choice quiz (3 questions per sub-topic, 4 options A-D, one correct answer).
+        # Create the course with the unique title
+        course = GeneratedCourse.objects.create(
+            user=request.user,
+            title=base_title,
+            description=f"AI-generated C++ course for {level} level",
+            level=level,
+            chapters_count=no_of_chapters,
+            category="C++ Programming"
+        )
 
-        Respond ONLY with valid JSON in this structure:
+        # Revised lessons with memory management moved to moderate level
+        if not lessons:
+            lessons_map = {
+                'beginner': [
+                    "Introduction to C++ Programming",
+                    "Variables, Data Types, and Constants",
+                    "Basic Input/Output Operations",
+                    "Control Flow and Functions",
+                    "Arrays and Strings",
+                    "Setting Up Development Environment"
+                ],
+                'moderate': [
+                    "Object-Oriented Programming Concepts",
+                    "Basic Memory Management",  # Moved from beginner to moderate
+                    "Advanced Pointers and Memory",
+                    "Inheritance and Polymorphism",
+                    "Exception Handling",
+                    "File I/O Operations"
+                ],
+                'advanced': [
+                    "Advanced Memory Management",
+                    "Multithreading and Concurrency",
+                    "Template Metaprogramming",
+                    "STL Containers and Algorithms",
+                    "Performance Optimization",
+                    "Design Patterns in C++"
+                ]
+            }
+            lessons = lessons_map.get(level, lessons_map['beginner'])
+
+        # Enhanced AI Prompt for comprehensive content with strict quiz requirements
+        prompt = f"""
+        CRITICAL INSTRUCTION: You MUST create a comprehensive C++ course with detailed lessons. 
+        EVERY SINGLE LESSON MUST include a quiz with exactly 4 high-quality questions.
+        The quiz is ESSENTIAL for student progression in the learning system.
+        
+        COURSE TITLE: "{base_title}"
+        TARGET AUDIENCE: {level} level C++ students
+        LESSON COUNT: {len(lessons)}
+        
+        NON-NEGOTIABLE REQUIREMENTS:
+        1. Each lesson MUST have a quiz with exactly 4 questions
+        2. Each question MUST have exactly 4 answer options (A, B, C, D)
+        3. Only one correct answer per question
+        4. Questions must test actual understanding of the lesson content
+        5. Answer options must be plausible but only one is correct
+        6. Lesson content must be comprehensive (1000+ words) with code examples
+        
+        LESSONS TO CREATE (in exact order):
+        {json.dumps(lessons, indent=2)}
+        
+        FORMAT REQUIREMENTS:
+        You MUST return valid JSON with this exact structure:
         {{
-            "title": "Course Title",
-            "description": "Course Description",
-            "chapters": [
+            "lessons": [
                 {{
-                    "title": "Chapter Title",
-                    "description": "Chapter description",
-                    "topics": [
-                        {{
-                            "title": "Topic Title",
-                            "content": "Detailed topic content...",
-                            "quiz": {{
-                                "questions": [
-                                    {{
-                                        "question_text": "...",
-                                        "answers": [
-                                            {{ "answer_text": "...", "option_key": "A" }},
-                                            {{ "answer_text": "...", "option_key": "B" }},
-                                            {{ "answer_text": "...", "option_key": "C" }},
-                                            {{ "answer_text": "...", "option_key": "D" }}
-                                        ],
-                                        "correct_answer_key": "B"
-                                    }}
+                    "title": "Exact lesson title from the list above",
+                    "order": 1,
+                    "content": "Comprehensive lesson content (1000+ words) with:
+                    - Clear explanations of concepts
+                    - Practical code examples
+                    - Real-world applications
+                    - Best practices
+                    - Common pitfalls to avoid
+                    - Memory diagrams where appropriate",
+                    "quiz": {{
+                        "questions": [
+                            {{
+                                "question_text": "Challenging question that tests understanding",
+                                "answers": [
+                                    {{"answer_text": "Plausible but incorrect option", "option_key": "A", "is_correct": false}},
+                                    {{"answer_text": "Correct answer", "option_key": "B", "is_correct": true}},
+                                    {{"answer_text": "Plausible but incorrect option", "option_key": "C", "is_correct": false}},
+                                    {{"answer_text": "Clearly wrong option", "option_key": "D", "is_correct": false}}
+                                ]
+                            }},
+                            {{
+                                "question_text": "Question about practical application",
+                                "answers": [
+                                    {{"answer_text": "Partially correct but incomplete", "option_key": "A", "is_correct": false}},
+                                    {{"answer_text": "Correct application", "option_key": "B", "is_correct": true}},
+                                    {{"answer_text": "Completely wrong approach", "option_key": "C", "is_correct": false}},
+                                    {{"answer_text": "Opposite of correct approach", "option_key": "D", "is_correct": false}}
+                                ]
+                            }},
+                            {{
+                                "question_text": "Question about syntax or code structure",
+                                "answers": [
+                                    {{"answer_text": "Incorrect syntax", "option_key": "A", "is_correct": false}},
+                                    {{"answer_text": "Correct syntax", "option_key": "B", "is_correct": true}},
+                                    {{"answer_text": "Invalid approach", "option_key": "C", "is_correct": false}},
+                                    {{"answer_text": "Working but inefficient approach", "option_key": "D", "is_correct": false}}
+                                ]
+                            }},
+                            {{
+                                "question_text": "Conceptual question about underlying principles",
+                                "answers": [
+                                    {{"answer_text": "Misunderstanding of concept", "option_key": "A", "is_correct": false}},
+                                    {{"answer_text": "Accurate understanding", "option_key": "B", "is_correct": true}},
+                                    {{"answer_text": "Common misconception", "option_key": "C", "is_correct": false}},
+                                    {{"answer_text": "Irrelevant information", "option_key": "D", "is_correct": false}}
                                 ]
                             }}
-                        }}
-                    ]
+                        ]
+                    }}
                 }}
             ]
         }}
+        
+        FAILURE TO INCLUDE A QUIZ FOR ANY LESSON WILL MAKE THE ENTIRE COURSE USELESS.
+        STUDENTS CANNOT PROGRESS WITHOUT COMPLETING QUIZZES.
+        THIS IS THE MOST IMPORTANT REQUIREMENT.
+        
+        TONE AND STYLE:
+        - Professional but accessible for {level} level students
+        - Practical with real code examples
+        - Focus on understanding rather than memorization
+        - Include both theoretical concepts and practical applications
+        
+        REMEMBER: QUIZZES ARE NOT OPTIONAL. THEY ARE REQUIRED FOR EVERY LESSON.
         """
 
-        # Generate content with better error handling
-        try:
-            # Use a more reliable model
-            model = genai.GenerativeModel('gemini-2.0-flash-lite', generation_config={"response_mime_type": "application/json"})
-            response = model.generate_content(user_prompt, request_options={"timeout": 120})  # Reduced timeout
-        except Exception as e:
-            return JsonResponse({'success': False, 'error': f'AI service error: {str(e)}'}, status=500)
+        logger.info(f"Sending enhanced prompt to AI: {prompt[:500]}")
 
-        if not response or not response.text:
-            return JsonResponse({'success': False, 'error': 'AI returned empty response.'}, status=500)
+        # AI Generation with strict validation
+        max_retries = 5  # Increased retries for better chance of success
+        retry_delay = 2
+        course_data = None
+        
+        for attempt in range(max_retries):
+            try:
+                model = genai.GenerativeModel('gemini-2.5-flash-lite', generation_config={"response_mime_type": "application/json"})
+                response = model.generate_content(prompt)
+                logger.info(f"AI response received (first 500 chars): {response.text[:500]}")
 
-        # Parse the response
-        try:
-            generated_data = json.loads(response.text)
-        except json.JSONDecodeError as e:
-            return JsonResponse({'success': False, 'error': f'Invalid JSON from AI: {str(e)}'}, status=500)
+                # Try parsing JSON
+                try:
+                    course_data = json.loads(response.text)
+                except json.JSONDecodeError:
+                    cleaned = response.text.strip()
+                    cleaned = re.sub(r'^```json', '', cleaned)
+                    cleaned = re.sub(r'```$', '', cleaned)
+                    match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+                    if match:
+                        course_data = json.loads(match.group())
+                    else:
+                        raise ValueError("Could not extract JSON from response")
 
-        if not generated_data.get('chapters') or not isinstance(generated_data['chapters'], list):
-            return JsonResponse({'success': False, 'error': 'Invalid AI course structure.'}, status=500)
+                if 'lessons' not in course_data:
+                    raise ValueError("AI response missing 'lessons' key")
+                
+                # Validate that each lesson has a quiz with exactly 4 questions
+                valid_lessons = True
+                missing_quizzes = []
+                
+                for i, lesson in enumerate(course_data.get('lessons', [])):
+                    lesson_title = lesson.get('title', f'Lesson {i+1}')
+                    
+                    if 'quiz' not in lesson:
+                        missing_quizzes.append(lesson_title)
+                        valid_lessons = False
+                        continue
+                    
+                    questions = lesson['quiz'].get('questions', [])
+                    if len(questions) < 4:
+                        missing_quizzes.append(f"{lesson_title} (only {len(questions)} questions)")
+                        valid_lessons = False
+                    elif len(questions) > 4:
+                        # If more than 4 questions, just take the first 4
+                        lesson['quiz']['questions'] = questions[:4]
+                
+                if valid_lessons:
+                    logger.info("All lessons have valid quizzes")
+                    break
+                else:
+                    error_msg = f"Missing or incomplete quizzes for: {', '.join(missing_quizzes)}"
+                    logger.warning(f"Attempt {attempt+1} failed: {error_msg}")
+                    
+                    if attempt < max_retries - 1:
+                        # Add specific feedback to the prompt for the next attempt
+                        prompt += f"\n\nPREVIOUS ATTEMPT FAILED: The following lessons were missing quizzes: {', '.join(missing_quizzes)}. PLEASE ENSURE every lesson has a complete quiz with exactly 4 questions."
+                        time.sleep(retry_delay)
+                    else:
+                        raise ValueError(error_msg)
+                    
+            except Exception as e:
+                logger.error(f"AI generation failed attempt {attempt+1}: {e}")
+                if attempt < max_retries - 1:
+                    time.sleep(retry_delay)
+                    continue
+                else:
+                    course.delete()
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'AI generation failed: {str(e)}'
+                    }, status=500)
 
-        # Save course and lessons
-        with transaction.atomic():
-            generated_course = GeneratedCourse.objects.create(
-                user=request.user,
-                title=generated_data.get('title', lesson_topic),
-                description=generated_data.get('description', description),
-                difficulty=level,
-                include_video=data.get('includeVideo', False),
-                chapters_count=len(generated_data.get('chapters', [])),
-                generated_content=generated_data
+        # Create Chapter
+        chapter = GeneratedChapter.objects.create(
+            course=course,
+            title="Main Lessons",
+            order=1,
+            duration="N/A",
+            image_prompt=""
+        )
+
+        # Create Lessons & Quizzes
+        first_topic_id = None
+        for lesson_data in course_data.get('lessons', []):
+            topic = GeneratedTopic.objects.create(
+                chapter=chapter,
+                title=lesson_data.get('title', 'Untitled Lesson'),
+                content=lesson_data.get('content', ''),
+                order=lesson_data.get('order', 1),
+                is_regenerated=False,
+                is_reinforcement=False
             )
 
-            first_topic = None
-            for chapter_idx, chapter_data in enumerate(generated_data['chapters']):
-                generated_chapter = GeneratedChapter.objects.create(
-                    course=generated_course,
-                    title=chapter_data.get('title', f'Chapter {chapter_idx+1}'),
-                    duration=chapter_data.get('duration', '10 min'),
-                    order=chapter_idx
+            if first_topic_id is None:
+                first_topic_id = topic.id
+
+            # Create quiz - ensure we have exactly 4 questions
+            quiz_data = lesson_data.get('quiz', {})
+            quiz = GeneratedQuiz.objects.create(topic=topic)
+            
+            # Create questions and answers
+            questions = quiz_data.get('questions', [])
+            for q_idx, question_data in enumerate(questions[:4]):  # Limit to 4 questions
+                question = GeneratedQuestion.objects.create(
+                    quiz=quiz,
+                    question_text=question_data.get('question_text', f'Question {q_idx+1}'),
+                    order=q_idx
                 )
-                for topic_idx, topic_data in enumerate(chapter_data.get('topics', [])):
-                    generated_topic = GeneratedTopic.objects.create(
-                        chapter=generated_chapter,
-                        title=topic_data.get('title', f'Topic {topic_idx+1}'),
-                        content=topic_data.get('content', 'No content provided.'),
-                        description=topic_data.get('description', ''),
-                        order=topic_idx
+                
+                # Create answers
+                answers = question_data.get('answers', [])
+                for a_idx, answer_data in enumerate(answers[:4]):  # Limit to 4 answers
+                    GeneratedAnswer.objects.create(
+                        question=question,
+                        answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
+                        option_key=answer_data.get('option_key', chr(65 + a_idx)),
+                        is_correct=answer_data.get('is_correct', False),
+                        order=a_idx
                     )
-                    if not first_topic: 
-                        first_topic = generated_topic
 
-                    if 'quiz' in topic_data and topic_data['quiz'].get('questions'):
-                        quiz = GeneratedQuiz.objects.create(topic=generated_topic)
-                        for q_idx, question_data in enumerate(topic_data['quiz']['questions']):
-                            question = GeneratedQuestion.objects.create(
-                                quiz=quiz,
-                                question_text=question_data.get('question_text', f'Question {q_idx+1}'),
-                                order=q_idx
-                            )
-                            for a_idx, answer_data in enumerate(question_data.get('answers', [])):
-                                is_correct = answer_data.get('option_key') == question_data.get('correct_answer_key')
-                                GeneratedAnswer.objects.create(
-                                    question=question,
-                                    answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
-                                    option_key=answer_data.get('option_key', chr(65+a_idx)),
-                                    is_correct=is_correct,
-                                    order=a_idx
-                                )
-
-        if first_topic:
-            return JsonResponse({
-                'success': True, 
-                'course_id': generated_course.id, 
-                'first_topic_id': first_topic.id
-            })
-        else:
-            return JsonResponse({'success': False, 'error': 'AI did not generate any topics.'}, status=500)
+        logger.info(f"Course generated successfully: {course.id}, first topic: {first_topic_id}")
+        return JsonResponse({
+            'success': True,
+            'course_id': course.id,
+            'first_topic_id': first_topic_id,
+            'message': 'Course generated successfully'
+        })
 
     except Exception as e:
-        # Log the error for debugging
-        import logging
-        logger = logging.getLogger(__name__)
-        logger.error(f"Error generating course: {str(e)}")
-        
-        return JsonResponse({'success': False, 'error': f'Unexpected error: {str(e)}'}, status=500)
+        logger.error(f"Error in generate_course: {str(e)}", exc_info=True)
+        return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
 @login_required
 def learning_default(request):
@@ -489,37 +665,7 @@ def complete_lesson(request, lesson_id):
     
     return JsonResponse({'success': False, 'error': 'Invalid request method'})
 
-"""
-@login_required
-def complete_generated_topic(request, topic_id):
-    topic = get_object_or_404(GeneratedTopic, id=topic_id)
-    student = request.user
     
-    # Use update_or_create to set the topic as completed
-    UserProgress.objects.update_or_create(
-        student=student,
-        generated_topic=topic,
-        defaults={
-            'is_completed': True,
-            'completed_at': timezone.now(),
-        }
-    )
-    #messages.success(request, f"Topic '{topic.title}' marked as completed!")
-    
-    # Redirect back to the same page with the next lesson
-    course_id = topic.chapter.course.id
-    next_topic = GeneratedTopic.objects.filter(
-        chapter__course=topic.chapter.course,
-        chapter__order__gte=topic.chapter.order,
-        order__gt=topic.order
-    ).order_by('chapter__order', 'order').first()
-    
-    if next_topic:
-        return redirect(f"/learning/?generated_course_id={course_id}&topic_id={next_topic.id}")
-    else:
-        # If no next topic, redirect to the course learning page to show completion
-        return redirect(f"/learning/?generated_course_id={course_id}&topic_id={topic.id}")
- """   
 @login_required
 def update_lesson_time(request, lesson_id):
     """Update time spent on a lesson"""
@@ -730,6 +876,7 @@ def complete_generated_topic(request, topic_id=None):
         data = json.loads(request.body)
         topic_id = data.get('topic_id')
         user_answers = data.get('answers', {})
+        is_retry = data.get('is_retry', False)
 
         if not topic_id:
             return JsonResponse({'success': False, 'error': 'Topic ID is required.'}, status=400)
@@ -738,10 +885,9 @@ def complete_generated_topic(request, topic_id=None):
         student = request.user
         course = topic.chapter.course
         
-        # Calculate quiz score and collect wrong answers
+        # Calculate quiz score
         correct_answers_count = 0
         total_questions = topic.quiz.questions.count() if hasattr(topic, 'quiz') else 0
-        wrong_answers = []  # Store wrong answers for remedial resources
         
         if total_questions > 0:
             for question in topic.quiz.questions.all():
@@ -751,14 +897,6 @@ def complete_generated_topic(request, topic_id=None):
                     
                     if user_selected_option == correct_answer.option_key:
                         correct_answers_count += 1
-                    else:
-                        # Add wrong answer details - use consistent field names
-                        wrong_answers.append({
-                            'question': question.question_text,
-                            'user_answer': user_selected_option,
-                            'correct_answer': correct_answer.option_key,
-                            'correct_answer_text': correct_answer.answer_text
-                        })
                 except GeneratedAnswer.DoesNotExist:
                     continue
         
@@ -767,24 +905,22 @@ def complete_generated_topic(request, topic_id=None):
         # Check if student passed (50% or higher)
         passed = score_percentage >= 50
         
-        # First, try to get the existing completion record
+        # Get or create completion record
         try:
             completion = GeneratedTopicCompletion.objects.get(student=student, topic=topic)
-            # If it exists, update it
+            # Update existing record
             completion.score = score_percentage
             completion.passed = passed
-            completion.wrong_answers = wrong_answers
-            completion.attempt_count += 1  # Manually increment the attempt count
+            completion.attempt_count += 1  # Manual increment
             completion.save()
         except GeneratedTopicCompletion.DoesNotExist:
-            # If it doesn't exist, create a new one
+            # Create new record
             completion = GeneratedTopicCompletion.objects.create(
                 student=student,
                 topic=topic,
                 score=score_percentage,
                 passed=passed,
-                wrong_answers=wrong_answers,
-                attempt_count=1  # Start with 1 for new records
+                attempt_count=1
             )
         
         # Update overall course progress (only count passed topics)
@@ -798,15 +934,28 @@ def complete_generated_topic(request, topic_id=None):
         course_progress = int((completed_topics / total_topics) * 100) if total_topics > 0 else 0
         
         # Get specific C++ remedial resources with wrong answers
-        remedial_resources = get_cpp_remedial_resources(topic.title, score_percentage, wrong_answers)
+        remedial_resources = get_cpp_remedial_resources(topic.title, score_percentage)
         
         # Generate AI feedback
         ai_feedback = generate_ai_feedback(topic, user_answers, score_percentage, passed, remedial_resources)
 
-        # Find or generate next topic based on performance
+        # Find next topic based on performance
         next_topic = None
         if passed:
-            next_topic = get_or_generate_next_topic(course, topic, student, score_percentage)
+            # Find next topic in sequence
+            all_topics = GeneratedTopic.objects.filter(chapter__course=course).order_by('order')
+            current_index = None
+            for idx, t in enumerate(all_topics):
+                if t.id == topic.id:
+                    current_index = idx
+                    break
+            
+            if current_index is not None and current_index < len(all_topics) - 1:
+                next_topic = all_topics[current_index + 1]
+                
+                # If performance was poor, adapt the next topic
+                if score_percentage < 70:
+                    next_topic = generate_adapted_topic(next_topic, score_percentage)
         
         response_data = {
             'success': True,
@@ -826,270 +975,81 @@ def complete_generated_topic(request, topic_id=None):
     except Exception as e:
         logger.error(f"Error in complete_generated_topic: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
     
-def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_answers):
-    """
-    Regenerate a simpler version of a topic based on the student's performance
-    """
+def generate_adapted_topic(original_topic, performance_score):
+    """Generate an adapted version of a topic based on performance"""
     try:
-        # Determine the complexity level based on the score
-        if score_percentage < 20:
+        # Determine complexity level based on performance
+        if performance_score < 50:
             complexity = "very basic"
-            examples_multiplier = 2  # Include more examples
-        elif score_percentage < 35:
+        elif performance_score < 70:
             complexity = "basic"
-            examples_multiplier = 1.5
         else:
-            complexity = "simplified"
-            examples_multiplier = 1.2
-        
-        # Analyze wrong answers to understand specific difficulties
-        difficulty_analysis = ""
-        if wrong_answers:
-            difficulty_analysis = "The student specifically struggled with:\n"
-            for i, wrong in enumerate(wrong_answers, 1):
-                question_text = wrong.get('question', wrong.get('question_text', 'Unknown question'))
-                user_answer = wrong.get('user_answer', 'No answer')
-                correct_answer = wrong.get('correct_answer', wrong.get('correct_answer_text', 'Unknown answer'))
-                
-                difficulty_analysis += f"{i}. {question_text}\n"
-                difficulty_analysis += f"   Their answer: {user_answer}\n"
-                difficulty_analysis += f"   Correct answer: {correct_answer}\n"
+            return original_topic  # No adaptation needed
         
         prompt = f"""
-        Create a simpler version of the C++ topic "{original_topic.title}" for a student who scored {score_percentage}%.
+        Create a {complexity} version of the following C++ lesson for a student who scored {performance_score}% on the previous lesson.
         
-        {difficulty_analysis}
+        Original Lesson: {original_topic.title}
+        Original Content: {original_topic.content[:1000]}...
         
-        Please generate a new version that:
-        1. Is at a {complexity} level
-        2. Uses simpler language and more concrete examples
-        3. Focuses on the specific concepts the student struggled with
-        4. Includes {examples_multiplier}x more examples than the original
-        5. Breaks down complex concepts into smaller, more digestible parts
-        6. Uses analogies and real-world examples where appropriate
+        Please create a simplified version that:
+        1. Uses simpler language and more examples
+        2. Focuses on core concepts
+        3. Breaks down complex ideas into smaller steps
+        4. Includes practical examples
         
-        Also generate a simpler quiz with 3 questions that focus on the core concepts.
-        
-        Respond with JSON in this format:
-        {{
-            "title": "Simplified: [Original Title]",
-            "content": "Simplified content...",
-            "quiz": {{
-                "questions": [
-                    {{
-                        "question_text": "...",
-                        "answers": [
-                            {{ "answer_text": "...", "option_key": "A" }},
-                            {{ "answer_text": "...", "option_key": "B" }},
-                            {{ "answer_text": "...", "option_key": "C" }},
-                            {{ "answer_text": "...", "option_key": "D" }}
-                        ],
-                        "correct_answer_key": "B"
-                    }}
-                ]
-            }}
-        }}
+        Respond with JSON containing:
+        - title: Adapted title
+        - content: Simplified content
+        - quiz: Simplified quiz with 3 questions
         """
         
+        # Generate content using AI
         model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
         
-        # Try to parse the response
-        try:
-            topic_data = json.loads(response.text)
-        except json.JSONDecodeError:
-            # If it's not valid JSON, try to extract JSON from the response
-            import re
-            # Try to find JSON in the response
-            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
-            if json_match:
-                try:
-                    topic_data = json.loads(json_match.group())
-                except json.JSONDecodeError:
-                    logger.error(f"Could not parse extracted JSON: {json_match.group()}")
-                    return None
-            else:
-                logger.error(f"Could not extract JSON from AI response: {response.text}")
-                return None
+        # Parse and create adapted topic
+        adapted_data = json.loads(response.text)
         
-        # Create a new chapter for the regenerated topic
-        original_chapter = original_topic.chapter
-        new_chapter_order = original_chapter.order + 0.1  # Place it right after the original
-        
-        # Check if a chapter for regenerated topics already exists
-        regenerated_chapter = GeneratedChapter.objects.filter(
-            course=original_chapter.course,
-            title=f"Reinforcement: {original_chapter.title}"
-        ).first()
-        
-        if not regenerated_chapter:
-            regenerated_chapter = GeneratedChapter.objects.create(
-                course=original_chapter.course,
-                title=f"Reinforcement: {original_chapter.title}",
-                order=new_chapter_order
-            )
-        
-        # Create the regenerated topic
-        regenerated_topic = GeneratedTopic.objects.create(
-            chapter=regenerated_chapter,
-            title=topic_data.get('title', f"Simplified: {original_topic.title}"),
-            content=topic_data.get('content', ''),
-            order=0,
+        # Create adapted topic
+        adapted_topic = GeneratedTopic.objects.create(
+            chapter=original_topic.chapter,
+            title=adapted_data.get('title', f"Simplified: {original_topic.title}"),
+            content=adapted_data.get('content', ''),
+            order=original_topic.order,
             is_regenerated=True,
             original_topic=original_topic
         )
         
-        # Create quiz if provided
-        if 'quiz' in topic_data and topic_data['quiz'].get('questions'):
-            quiz = GeneratedQuiz.objects.create(topic=regenerated_topic)
-            for q_idx, question_data in enumerate(topic_data['quiz']['questions']):
-                question = GeneratedQuestion.objects.create(
-                    quiz=quiz,
-                    question_text=question_data.get('question_text', f'Question {q_idx+1}'),
-                    order=q_idx
-                )
-                for a_idx, answer_data in enumerate(question_data.get('answers', [])):
-                    is_correct = answer_data.get('option_key') == question_data.get('correct_answer_key')
-                    GeneratedAnswer.objects.create(
-                        question=question,
-                        answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
-                        option_key=answer_data.get('option_key', chr(65+a_idx)),
-                        is_correct=is_correct,
-                        order=a_idx
-                    )
-        
-        # Log the regeneration - FIXED: Use student.pk instead of student.id
-        logger.info(f"Regenerated topic {original_topic.id} for student {student.pk} with score {score_percentage}%")
-        
-        return regenerated_topic
-        
-    except Exception as e:
-        logger.error(f"Error regenerating topic: {str(e)}")
-        return None
-
-def get_or_generate_next_topic(course, current_topic, student, score):
-    """
-    Get the next topic in sequence or generate a new one based on performance
-    """
-    try:
-        # First, try to find the next topic in the existing sequence
-        next_topic = GeneratedTopic.objects.filter(
-            chapter__course=course,
-            chapter__order__gte=current_topic.chapter.order,
-            order__gt=current_topic.order
-        ).order_by('chapter__order', 'order').first()
-        
-        if next_topic:
-            return next_topic
-        
-        # If no next topic exists, we're at the end of the course
-        # Check if we should generate additional topics based on performance
-        if score < 70:  # If score is good but not excellent, generate reinforcement
-            return generate_reinforcement_topic(course, current_topic, student, score)
-        else:
-            # For excellent scores, just return None (end of course)
-            return None
+        # Create adapted quiz if provided
+        if 'quiz' in adapted_data:
+            quiz = GeneratedQuiz.objects.create(topic=adapted_topic)
             
-    except Exception as e:
-       
-        return None
-
-
-def generate_reinforcement_topic(course, current_topic, student, score):
-    """
-    Generate a reinforcement topic based on the student's performance
-    """
-    try:
-        # Determine the focus area based on performance
-        if score < 60:
-            focus = "basic reinforcement"
-        else:
-            focus = "advanced practice"
-        
-        prompt = f"""
-        Generate a follow-up C++ topic that reinforces the concepts from "{current_topic.title}".
-        The student scored {score}% on the previous topic, so this should be {focus}.
-        
-        Create a topic that:
-        1. Reviews key concepts from the previous topic
-        2. Provides additional examples and practice
-        3. Includes a quiz to assess understanding
-        4. Is appropriate for someone who scored {score}%
-        
-        Respond with JSON in this format:
-        {{
-            "title": "Reinforcement Topic Title",
-            "content": "Detailed content...",
-            "description": "Brief description",
-            "quiz": {{
-                "questions": [
-                    {{
-                        "question_text": "...",
-                        "answers": [
-                            {{ "answer_text": "...", "option_key": "A" }},
-                            {{ "answer_text": "...", "option_key": "B" }},
-                            {{ "answer_text": "...", "option_key": "C" }},
-                            {{ "answer_text": "...", "option_key": "D" }}
-                        ],
-                        "correct_answer_key": "B"
-                    }}
-                ]
-            }}
-        }}
-        """
-        
-        model = genai.GenerativeModel('gemini-2.0-flash-lite', generation_config={"response_mime_type": "application/json"})
-        response = model.generate_content(prompt)
-        topic_data = json.loads(response.text)
-        
-        # Create the new topic
-        last_chapter = course.chapters.order_by('-order').first()
-        new_chapter_order = last_chapter.order + 1 if last_chapter else 1
-        
-        # Create a new chapter for the reinforcement topic
-        new_chapter = GeneratedChapter.objects.create(
-            course=course,
-            title=f"Reinforcement - {current_topic.title}",
-            duration="15 min",
-            order=new_chapter_order
-        )
-        
-        # Create the reinforcement topic
-        reinforcement_topic = GeneratedTopic.objects.create(
-            chapter=new_chapter,
-            title=topic_data.get('title', f"Reinforcement: {current_topic.title}"),
-            content=topic_data.get('content', ''),
-            description=topic_data.get('description', ''),
-            order=0
-        )
-        
-        # Create quiz if provided
-        if 'quiz' in topic_data and topic_data['quiz'].get('questions'):
-            quiz = GeneratedQuiz.objects.create(topic=reinforcement_topic)
-            for q_idx, question_data in enumerate(topic_data['quiz']['questions']):
+            for q_idx, question_data in enumerate(adapted_data['quiz'].get('questions', [])):
                 question = GeneratedQuestion.objects.create(
                     quiz=quiz,
                     question_text=question_data.get('question_text', f'Question {q_idx+1}'),
                     order=q_idx
                 )
+                
                 for a_idx, answer_data in enumerate(question_data.get('answers', [])):
-                    is_correct = answer_data.get('option_key') == question_data.get('correct_answer_key')
                     GeneratedAnswer.objects.create(
                         question=question,
                         answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
-                        option_key=answer_data.get('option_key', chr(65+a_idx)),
-                        is_correct=is_correct,
+                        option_key=answer_data.get('option_key', chr(65 + a_idx)),
+                        is_correct=answer_data.get('is_correct', False),
                         order=a_idx
                     )
         
-        return reinforcement_topic
+        return adapted_topic
         
     except Exception as e:
-        
-        return None
-
-
+        logger.error(f"Error generating adapted topic: {str(e)}")
+        return original_topic  # Fallback to original
+    
+    
 def get_remedial_resources(topic_name, learning_style):
     """Get remedial learning resources based on topic and learning style"""
     # This can be expanded with a database of resources
@@ -1111,7 +1071,6 @@ def get_remedial_resources(topic_name, learning_style):
     return resources.get(learning_style, [
         {'type': 'general', 'title': f'Learn more about {topic_name}', 'url': f'https://google.com/search?q={topic_name.replace(" ", "+")}+tutorial'}
     ])
-  
   
 from django.core.exceptions import FieldError     
 from django.db.models import Avg    
@@ -1205,7 +1164,7 @@ def get_ai_progress_recommendations(progress_data):
         {json.dumps([{'course': c['course'].title, 'progress': c['progress'], 'avg_score': c['avg_score']} for c in progress_data['generated_courses']], indent=2)}
         
         Please provide:
-        1. A brief analysis of the student's overall progress
+        1. A brief analysis of the student's overall progress, if they have performed bad tell them it is not good and need improvement
         2. Identification of strengths and weaknesses
         3. 3-5 personalized recommendations for what to study next
         4. Suggestions tailored to their learning style
@@ -1215,7 +1174,7 @@ def get_ai_progress_recommendations(progress_data):
         """
         
         # Call Gemini AI
-        model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         response = model.generate_content(prompt)
         
         # Parse the AI response
@@ -1290,37 +1249,38 @@ def get_cpp_remedial_resources(topic_name, score_percentage, wrong_answers=None)
                 wrong_answers_context += f"   Correct answer: {correct_answer}\n"
         
         prompt = f"""
-        A student scored {score_percentage}% on a C++ quiz about "{topic_name}".{wrong_answers_context}
-        
-        They need additional learning resources to improve their understanding, particularly focusing on the areas where they struggled.
-        
-        Please recommend 3-5 specific, high-quality C++ learning resources that would help them. For each resource, provide:
-        1. Exact title of the resource
-        2. Specific URL to the relevant content
-        3. Type (video, article, tutorial, exercises, documentation)
-        4. Source (freeCodeCamp, W3Schools, GeeksforGeeks, LearnCpp, cppreference, etc.)
-        5. Brief description of why this resource would help address their specific misunderstandings
-        
-        Focus on resources that are:
-        - Specifically about C++ (not general programming)
-        - From reputable sources
-        - Appropriate for someone who scored {score_percentage}%
-        - Directly relevant to "{topic_name}" and the specific concepts they struggled with
-        
-        Return the response as a JSON array of objects with these fields:
-        title, url, type, source, description
-        
-        Example:
-        [
-            {{
-                "title": "C++ Pointers Explained",
-                "url": "https://www.youtube.com/watch?v=DTxHyVn0ODg",
-                "type": "video",
-                "source": "freeCodeCamp",
-                "description": "Comprehensive video explaining pointers with visual examples, which addresses the student's confusion about pointer arithmetic"
-            }}
-        ]
-        """
+                A student scored {score_percentage}% on a C++ quiz about "{topic_name}".{wrong_answers_context}
+
+                They need additional learning resources to improve their understanding, particularly focusing on the areas where they struggled.
+
+                Please recommend 3-5 specific, high-quality C++ learning resources that would help them. For each resource, provide:
+                1. Exact title of the resource
+                2. Specific URL to the relevant content
+                3. Type (video, article, tutorial, exercises, documentation)
+                4. Source (only from reputable, well-known platforms such as freeCodeCamp, W3Schools, GeeksforGeeks, LearnCpp, cppreference, Programiz, The Cherno, or other highly rated C++ resources)
+                5. Brief description of why this resource would help address their specific misunderstandings
+
+                Focus on resources that are:
+                - Specifically about C++ (not general programming)
+                - From **trusted, reputable, and widely recognized sources**
+                - Appropriate for someone who scored {score_percentage}%
+                - Directly relevant to "{topic_name}" and the specific concepts they struggled with
+
+                Return the response as a JSON array of objects with these fields:
+                title, url, type, source, description
+
+                Example:
+                [
+                    {{
+                        "title": "C++ Pointers Explained",
+                        "url": "https://www.youtube.com/watch?v=DTxHyVn0ODg",
+                        "type": "video",
+                        "source": "freeCodeCamp",
+                        "description": "Comprehensive video explaining pointers with visual examples, which addresses the student's confusion about pointer arithmetic"
+                    }}
+                ]
+                """
+
         
         model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
@@ -1494,7 +1454,7 @@ def generate_ai_feedback(topic, user_answers, score, passed, remedial_resources)
     {resource_list}
     
     Provide feedback that:
-    1. Starts with an encouraging tone
+    1. Starts with an encouraging tone, start with whether they did good or bad
     2. Highlights what they did well
     3. Explains key areas for improvement based on their wrong answers
     4. Recommends specific resources to review based on their mistakes
@@ -1504,7 +1464,7 @@ def generate_ai_feedback(topic, user_answers, score, passed, remedial_resources)
     """
     
     try:
-        model = genai.GenerativeModel('gemini-2.0-flash-lite')
+        model = genai.GenerativeModel('gemini-2.5-flash')
         ai_response = model.generate_content(prompt)
         return ai_response.text
     except Exception as e:
@@ -1515,39 +1475,51 @@ def generate_ai_feedback(topic, user_answers, score, passed, remedial_resources)
         else:
             return f"You scored {score}% on {topic.title}. Review the material and try again. Recommended resources: {', '.join([r['title'] for r in remedial_resources])}"
 
+
 @require_POST
 @login_required
 @csrf_protect
 def regenerate_topic(request):
     """API endpoint to regenerate a simpler version of a topic"""
     try:
+        logger.info("Regenerate topic endpoint called by user: %s", request.user.username)
         data = json.loads(request.body)
         course_id = data.get('course_id')
         topic_id = data.get('topic_id')
         
+        logger.info("Request data: course_id=%s, topic_id=%s", course_id, topic_id)
+        
         if not course_id or not topic_id:
-            return JsonResponse({'success': False, 'error': 'Course ID and Topic ID are required.'}, status=400)
-            
+            error_msg = 'Course ID and Topic ID are required.'
+            logger.error(error_msg)
+            return JsonResponse({'success': False, 'error': error_msg}, status=400)
+        
         course = get_object_or_404(GeneratedCourse, id=course_id, user=request.user)
         topic = get_object_or_404(GeneratedTopic, id=topic_id, chapter__course=course)
         
+        logger.info("Found course: %s and topic: %s", course.title, topic.title)
+        
         # Prevent regenerating from a regenerated topic
         if topic.is_regenerated:
-            return JsonResponse({
-                'success': False, 
-                'error': 'Cannot generate a simplified lesson from an already simplified lesson.'
-            }, status=400)
+            error_msg = 'Cannot generate a simplified lesson from an already simplified lesson.'
+            logger.error(error_msg)
+            return JsonResponse({'success': False, 'error': error_msg}, status=400)
         
         # Check if the student has already completed this topic
         try:
             completion = GeneratedTopicCompletion.objects.get(student=request.user, topic=topic)
             score_percentage = completion.score
+            logger.info("Topic completion found with score: %s", score_percentage)
         except GeneratedTopicCompletion.DoesNotExist:
-            return JsonResponse({'success': False, 'error': 'You must complete the topic first.'}, status=400)
+            error_msg = 'You must complete the topic first.'
+            logger.error(error_msg)
+            return JsonResponse({'success': False, 'error': error_msg}, status=400)
         
         # Only allow regeneration if the student failed
         if score_percentage >= 50:
-            return JsonResponse({'success': False, 'error': 'You passed this topic. Regeneration is only available if you failed.'}, status=400)
+            error_msg = 'You passed this topic. Regeneration is only available if you failed.'
+            logger.error(error_msg)
+            return JsonResponse({'success': False, 'error': error_msg}, status=400)
         
         # Check if a regenerated topic already exists for this student and original topic
         existing_regenerated = GeneratedTopic.objects.filter(
@@ -1557,29 +1529,318 @@ def regenerate_topic(request):
         ).first()
         
         if existing_regenerated:
-            return JsonResponse({
-                'success': True, 
-                'regenerated_topic_id': existing_regenerated.id,
-                'message': 'A simplified version already exists.'
-            })
+            # Check if student has already completed the regenerated topic
+            try:
+                regen_completion = GeneratedTopicCompletion.objects.get(
+                    student=request.user, 
+                    topic=existing_regenerated
+                )
+                # If completed, check if they passed
+                if regen_completion.score >= 50:
+                    return JsonResponse({
+                        'success': False, 
+                        'error': 'You have already completed a simplified version of this topic and passed.'
+                    })
+                else:
+                    # If they failed the regenerated topic, allow retrying it
+                    return JsonResponse({
+                        'success': True, 
+                        'regenerated_topic_id': existing_regenerated.id,
+                        'message': 'A simplified version already exists.'
+                    })
+            except GeneratedTopicCompletion.DoesNotExist:
+                # Regenerated topic exists but not completed
+                return JsonResponse({
+                    'success': True, 
+                    'regenerated_topic_id': existing_regenerated.id,
+                    'message': 'A simplified version already exists.'
+                })
         
         # Get wrong answers from the completion record if available
         wrong_answers = []
         if hasattr(completion, 'wrong_answers') and completion.wrong_answers:
             wrong_answers = completion.wrong_answers
+            logger.info("Found %s wrong answers", len(wrong_answers))
         
         # Regenerate a simpler topic
         regenerated_topic = regenerate_simpler_topic(topic, request.user, score_percentage, wrong_answers)
         
         if regenerated_topic:
+            logger.info("Successfully regenerated topic with ID: %s", regenerated_topic.id)
             return JsonResponse({
                 'success': True, 
                 'regenerated_topic_id': regenerated_topic.id,
                 'message': 'Simplified topic generated successfully.'
             })
         else:
-            return JsonResponse({'success': False, 'error': 'Failed to generate simplified topic.'}, status=500)
+            error_msg = 'Failed to generate simplified topic.'
+            logger.error(error_msg)
+            return JsonResponse({'success': False, 'error': error_msg}, status=500)
             
     except Exception as e:
-        logger.error(f"Error in regenerate_topic: {str(e)}")
+        logger.exception("Exception in regenerate_topic")
         return JsonResponse({'success': False, 'error': 'Internal server error.'}, status=500)
+    
+def create_reinforcement_topic(course, student):
+    """
+    Create a reinforcement topic that summarizes all lessons in a course
+    based on the student's performance
+    """
+    try:
+        # Get all topics in the course
+        course_topics = GeneratedTopic.objects.filter(chapter__course=course).order_by('order')
+        
+        # Get student's performance data
+        weak_areas = []
+        for topic in course_topics:
+            try:
+                completion = GeneratedTopicCompletion.objects.get(student=student, topic=topic)
+                if completion.score < 70:  # Consider scores below 70% as weak areas
+                    weak_areas.append({
+                        'topic': topic,
+                        'score': completion.score,
+                        'wrong_answers': completion.wrong_answers if hasattr(completion, 'wrong_answers') else []
+                    })
+            except GeneratedTopicCompletion.DoesNotExist:
+                pass
+        
+        # Create prompt for AI to generate reinforcement content
+        prompt = f"""
+        Create a reinforcement lesson for a C++ programming course titled "{course.title}".
+        
+        The student struggled with the following areas:
+        {json.dumps([{'topic': area['topic'].title, 'score': area['score']} for area in weak_areas])}
+        
+        Please create a comprehensive summary that:
+        1. Reviews all key concepts from the course
+        2. Focuses especially on the areas where the student struggled
+        3. Provides additional examples and explanations for difficult concepts
+        4. Includes practice questions to reinforce learning
+        5. Uses simple language and clear explanations
+        
+        Format the response as JSON with this structure:
+        {{
+            "title": "Course Reinforcement: {course.title}",
+            "content": "Comprehensive review content...",
+            "quiz": {{
+                "questions": [
+                    {{
+                        "question_text": "...",
+                        "answers": [
+                            {{ "answer_text": "...", "option_key": "A" }},
+                            {{ "answer_text": "...", "option_key": "B" }},
+                            {{ "answer_text": "...", "option_key": "C" }},
+                            {{ "answer_text": "...", "option_key": "D" }}
+                        ],
+                        "correct_answer_key": "B"
+                    }}
+                ]
+            }}
+        }}
+        """
+        
+        # Generate content using AI
+        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+        response = model.generate_content(prompt)
+        
+        # Parse the response
+        try:
+            topic_data = json.loads(response.text)
+        except json.JSONDecodeError:
+            # If it's not valid JSON, try to extract JSON from the response
+            import re
+            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+            if json_match:
+                topic_data = json.loads(json_match.group())
+            else:
+                logger.error("Could not extract JSON from AI response")
+                return None
+        
+        # Create a new chapter for reinforcement topics
+        reinforcement_chapter = GeneratedChapter.objects.filter(
+            course=course,
+            title="Reinforcement"
+        ).first()
+        
+        if not reinforcement_chapter:
+            reinforcement_chapter = GeneratedChapter.objects.create(
+                course=course,
+                title="Reinforcement",
+                order=999  # Place at the end
+            )
+        
+        # Create the reinforcement topic
+        reinforcement_topic = GeneratedTopic.objects.create(
+            chapter=reinforcement_chapter,
+            title=topic_data.get('title', f"Reinforcement: {course.title}"),
+            content=topic_data.get('content', ''),
+            order=0,
+            is_reinforcement=True
+        )
+        
+        # Create quiz if provided
+        if 'quiz' in topic_data and topic_data['quiz'].get('questions'):
+            quiz = GeneratedQuiz.objects.create(topic=reinforcement_topic)
+            for q_idx, question_data in enumerate(topic_data['quiz']['questions']):
+                question = GeneratedQuestion.objects.create(
+                    quiz=quiz,
+                    question_text=question_data.get('question_text', f'Question {q_idx+1}'),
+                    order=q_idx
+                )
+                for a_idx, answer_data in enumerate(question_data.get('answers', [])):
+                    is_correct = answer_data.get('option_key') == question_data.get('correct_answer_key')
+                    GeneratedAnswer.objects.create(
+                        question=question,
+                        answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
+                        option_key=answer_data.get('option_key', chr(65+a_idx)),
+                        is_correct=is_correct,
+                        order=a_idx
+                    )
+        
+        logger.info(f"Created reinforcement topic for course: {course.title}")
+        return reinforcement_topic
+        
+    except Exception as e:
+        logger.error(f"Error creating reinforcement topic: {str(e)}")
+        return None    
+
+def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_answers):
+    """
+    Regenerate a simpler version of a topic based on the student's performance
+    """
+    try:
+        # Determine the complexity level based on the score
+        if score_percentage < 20:
+            complexity = "very basic"
+            examples_multiplier = 2  # Include more examples
+        elif score_percentage < 35:
+            complexity = "basic"
+            examples_multiplier = 1.5
+        else:
+            complexity = "simplified"
+            examples_multiplier = 1.2
+        
+        # Analyze wrong answers to understand specific difficulties
+        difficulty_analysis = ""
+        if wrong_answers:
+            difficulty_analysis = "The student specifically struggled with:\n"
+            for i, wrong in enumerate(wrong_answers, 1):
+                question_text = wrong.get('question', wrong.get('question_text', 'Unknown question'))
+                user_answer = wrong.get('user_answer', 'No answer')
+                correct_answer = wrong.get('correct_answer', wrong.get('correct_answer_text', 'Unknown answer'))
+                
+                difficulty_analysis += f"{i}. {question_text}\n"
+                difficulty_analysis += f"   Their answer: {user_answer}\n"
+                difficulty_analysis += f"   Correct answer: {correct_answer}\n"
+        
+        prompt = f"""
+        Create a simpler version of the C++ topic "{original_topic.title}" for a student who scored {score_percentage}%.
+        
+        {difficulty_analysis}
+        
+        Please generate a new version that:
+        1. Is at a {complexity} level
+        2. Uses simpler language and more concrete examples
+        3. Focuses on the specific concepts the student struggled with
+        4. Includes {examples_multiplier}x more examples than the original
+        5. Breaks down complex concepts into smaller, more digestible parts
+        6. Uses analogies and real-world examples where appropriate
+        
+        Also generate a simpler quiz with 4 questions that focus on the core concepts.
+        
+        Respond with JSON in this format:
+        {{
+            "title": "Simplified: [Original Title]",
+            "content": "Simplified content...",
+            "quiz": {{
+                "questions": [
+                    {{
+                        "question_text": "...",
+                        "answers": [
+                            {{ "answer_text": "...", "option_key": "A" }},
+                            {{ "answer_text": "...", "option_key": "B" }},
+                            {{ "answer_text": "...", "option_key": "C" }},
+                            {{ "answer_text": "...", "option_key": "D" }}
+                        ],
+                        "correct_answer_key": "B"
+                    }}
+                ]
+            }}
+        }}
+        """
+        
+        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+        response = model.generate_content(prompt)
+        
+        # Try to parse the response
+        try:
+            topic_data = json.loads(response.text)
+        except json.JSONDecodeError:
+            # If it's not valid JSON, try to extract JSON from the response
+            import re
+            # Try to find JSON in the response
+            json_match = re.search(r'\{.*\}', response.text, re.DOTALL)
+            if json_match:
+                try:
+                    topic_data = json.loads(json_match.group())
+                except json.JSONDecodeError:
+                    logger.error(f"Could not parse extracted JSON: {json_match.group()}")
+                    return None
+            else:
+                logger.error(f"Could not extract JSON from AI response: {response.text}")
+                return None
+        
+        # Create a new chapter for the regenerated topic
+        original_chapter = original_topic.chapter
+        new_chapter_order = original_chapter.order + 0.1  # Place it right after the original
+        
+        # Check if a chapter for regenerated topics already exists
+        regenerated_chapter = GeneratedChapter.objects.filter(
+            course=original_chapter.course,
+            title=f"Reinforcement: {original_chapter.title}"
+        ).first()
+        
+        if not regenerated_chapter:
+            regenerated_chapter = GeneratedChapter.objects.create(
+                course=original_chapter.course,
+                title=f"Reinforcement: {original_chapter.title}",
+                order=new_chapter_order
+            )
+        
+        # Create the regenerated topic
+        regenerated_topic = GeneratedTopic.objects.create(
+            chapter=regenerated_chapter,
+            title=topic_data.get('title', f"Simplified: {original_topic.title}"),
+            content=topic_data.get('content', ''),
+            order=0,
+            is_regenerated=True,
+            original_topic=original_topic
+        )
+        
+        # Create quiz if provided
+        if 'quiz' in topic_data and topic_data['quiz'].get('questions'):
+            quiz = GeneratedQuiz.objects.create(topic=regenerated_topic)
+            for q_idx, question_data in enumerate(topic_data['quiz']['questions']):
+                question = GeneratedQuestion.objects.create(
+                    quiz=quiz,
+                    question_text=question_data.get('question_text', f'Question {q_idx+1}'),
+                    order=q_idx
+                )
+                for a_idx, answer_data in enumerate(question_data.get('answers', [])):
+                    is_correct = answer_data.get('option_key') == question_data.get('correct_answer_key')
+                    GeneratedAnswer.objects.create(
+                        question=question,
+                        answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
+                        option_key=answer_data.get('option_key', chr(65+a_idx)),
+                        is_correct=is_correct,
+                        order=a_idx
+                    )
+        
+        # Log the regeneration - FIXED: Use student.pk instead of student.id
+        logger.info(f"Regenerated topic {original_topic.id} for student {student.pk} with score {score_percentage}%")
+        
+        return regenerated_topic
+        
+    except Exception as e:
+        logger.error(f"Error regenerating topic: {str(e)}")
+        return None    
