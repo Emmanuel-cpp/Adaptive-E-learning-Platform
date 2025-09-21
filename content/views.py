@@ -377,6 +377,10 @@ def generate_course(request):
         EVERY SINGLE LESSON MUST include a quiz with exactly 4 high-quality questions.
         The quiz is ESSENTIAL for student progression in the learning system.
         
+        CRITICAL: You MUST return valid JSON without any syntax errors, extra characters, or formatting issues.
+        Ensure that all strings are properly escaped and there are no trailing commas in objects or arrays.
+       
+                
         COURSE TITLE: "{base_title}"
         TARGET AUDIENCE: {level} level C++ students
         LESSON COUNT: {len(lessons)}
@@ -463,7 +467,7 @@ def generate_course(request):
         REMEMBER: QUIZZES ARE NOT OPTIONAL. THEY ARE REQUIRED FOR EVERY LESSON.
         """
 
-        logger.info(f"Sending enhanced prompt to AI: {prompt[:500]}")
+        logger.info(f"Sending enhanced prompt to AI: {prompt[:300]}")
 
         # AI Generation with strict validation
         max_retries = 5  # Increased retries for better chance of success
@@ -472,7 +476,7 @@ def generate_course(request):
         
         for attempt in range(max_retries):
             try:
-                model = genai.GenerativeModel('gemini-2.5-flash-lite', generation_config={"response_mime_type": "application/json"})
+                model = genai.GenerativeModel('gemini-2.5-pro', generation_config={"response_mime_type": "application/json"})
                 response = model.generate_content(prompt)
                 logger.info(f"AI response received (first 500 chars): {response.text[:500]}")
 
@@ -954,8 +958,8 @@ def complete_generated_topic(request, topic_id=None):
                 next_topic = all_topics[current_index + 1]
                 
                 # If performance was poor, adapt the next topic
-                if score_percentage < 70:
-                    next_topic = generate_adapted_topic(next_topic, score_percentage)
+                #if score_percentage < 70:
+                    #next_topic = generate_adapted_topic(next_topic, score_percentage)
         
         response_data = {
             'success': True,
@@ -976,78 +980,6 @@ def complete_generated_topic(request, topic_id=None):
         logger.error(f"Error in complete_generated_topic: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
 
-    
-def generate_adapted_topic(original_topic, performance_score):
-    """Generate an adapted version of a topic based on performance"""
-    try:
-        # Determine complexity level based on performance
-        if performance_score < 50:
-            complexity = "very basic"
-        elif performance_score < 70:
-            complexity = "basic"
-        else:
-            return original_topic  # No adaptation needed
-        
-        prompt = f"""
-        Create a {complexity} version of the following C++ lesson for a student who scored {performance_score}% on the previous lesson.
-        
-        Original Lesson: {original_topic.title}
-        Original Content: {original_topic.content[:1000]}...
-        
-        Please create a simplified version that:
-        1. Uses simpler language and more examples
-        2. Focuses on core concepts
-        3. Breaks down complex ideas into smaller steps
-        4. Includes practical examples
-        
-        Respond with JSON containing:
-        - title: Adapted title
-        - content: Simplified content
-        - quiz: Simplified quiz with 3 questions
-        """
-        
-        # Generate content using AI
-        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
-        response = model.generate_content(prompt)
-        
-        # Parse and create adapted topic
-        adapted_data = json.loads(response.text)
-        
-        # Create adapted topic
-        adapted_topic = GeneratedTopic.objects.create(
-            chapter=original_topic.chapter,
-            title=adapted_data.get('title', f"Simplified: {original_topic.title}"),
-            content=adapted_data.get('content', ''),
-            order=original_topic.order,
-            is_regenerated=True,
-            original_topic=original_topic
-        )
-        
-        # Create adapted quiz if provided
-        if 'quiz' in adapted_data:
-            quiz = GeneratedQuiz.objects.create(topic=adapted_topic)
-            
-            for q_idx, question_data in enumerate(adapted_data['quiz'].get('questions', [])):
-                question = GeneratedQuestion.objects.create(
-                    quiz=quiz,
-                    question_text=question_data.get('question_text', f'Question {q_idx+1}'),
-                    order=q_idx
-                )
-                
-                for a_idx, answer_data in enumerate(question_data.get('answers', [])):
-                    GeneratedAnswer.objects.create(
-                        question=question,
-                        answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
-                        option_key=answer_data.get('option_key', chr(65 + a_idx)),
-                        is_correct=answer_data.get('is_correct', False),
-                        order=a_idx
-                    )
-        
-        return adapted_topic
-        
-    except Exception as e:
-        logger.error(f"Error generating adapted topic: {str(e)}")
-        return original_topic  # Fallback to original
     
     
 def get_remedial_resources(topic_name, learning_style):
@@ -1232,14 +1164,13 @@ def generate_simplified_content(original_content, score):
         return original_content
 
 def get_cpp_remedial_resources(topic_name, score_percentage, wrong_answers=None):
-    """Get AI-generated specific C++ learning resources based on topic, performance, and wrong answers"""
+    """Get AI-generated specific C++ learning resources with validated URLs"""
     try:
         # Build prompt with wrong answers context if available
         wrong_answers_context = ""
         if wrong_answers:
             wrong_answers_context = "\n\nThe student specifically struggled with these questions:\n"
             for i, wrong in enumerate(wrong_answers, 1):
-                # Make sure we're using the correct field names
                 question_text = wrong.get('question', wrong.get('question_text', 'Unknown question'))
                 user_answer = wrong.get('user_answer', 'No answer')
                 correct_answer = wrong.get('correct_answer', wrong.get('correct_answer_text', 'Unknown answer'))
@@ -1249,40 +1180,51 @@ def get_cpp_remedial_resources(topic_name, score_percentage, wrong_answers=None)
                 wrong_answers_context += f"   Correct answer: {correct_answer}\n"
         
         prompt = f"""
-                A student scored {score_percentage}% on a C++ quiz about "{topic_name}".{wrong_answers_context}
+        A student scored {score_percentage}% on a C++ quiz about "{topic_name}".{wrong_answers_context}
 
-                They need additional learning resources to improve their understanding, particularly focusing on the areas where they struggled.
+        They need 4 high-quality learning resources to improve their understanding. 
 
-                Please recommend 3-5 specific, high-quality C++ learning resources that would help them. For each resource, provide:
-                1. Exact title of the resource
-                2. Specific URL to the relevant content
-                3. Type (video, article, tutorial, exercises, documentation)
-                4. Source (only from reputable, well-known platforms such as freeCodeCamp, W3Schools, GeeksforGeeks, LearnCpp, cppreference, Programiz, The Cherno, or other highly rated C++ resources)
-                5. Brief description of why this resource would help address their specific misunderstandings
+        CRITICAL REQUIREMENTS:
+        1. Each resource MUST be from a reputable, well-known platform
+        2. URLs MUST be valid, accessible, and directly link to the specific content
+        3. Resources must be specifically about C++ (not general programming)
+        4. Focus on resources that address the specific concepts they struggled with
+        5. Ensure URLs use https:// protocol and are fully qualified
+        6. Ensure there is strictly nothing like page not found
 
-                Focus on resources that are:
-                - Specifically about C++ (not general programming)
-                - From **trusted, reputable, and widely recognized sources**
-                - Appropriate for someone who scored {score_percentage}%
-                - Directly relevant to "{topic_name}" and the specific concepts they struggled with
+        Please ensure that these resources exist
+        Trusted sources to recommend from:
+        - freeCodeCamp (https://www.freecodecamp.org/)
+        - W3Schools (https://www.w3schools.com/)
+        - GeeksforGeeks (https://www.geeksforgeeks.org/)
+        - Microsoft C++ Docs (https://docs.microsoft.com/en-us/cpp/)
+        - The Cherno YouTube channel (https://www.youtube.com/c/TheCherno)
 
-                Return the response as a JSON array of objects with these fields:
-                title, url, type, source, description
+        For each resource, provide:
+        - title: Specific, descriptive title
+        - url: Full, valid URL to the exact resource
+        - type: video, article, tutorial, exercises, or documentation
+        - source: Name of the platform (e.g., "freeCodeCamp")
+        - description: Brief explanation of how this resource addresses their specific needs
 
-                Example:
-                [
-                    {{
-                        "title": "C++ Pointers Explained",
-                        "url": "https://www.youtube.com/watch?v=DTxHyVn0ODg",
-                        "type": "video",
-                        "source": "freeCodeCamp",
-                        "description": "Comprehensive video explaining pointers with visual examples, which addresses the student's confusion about pointer arithmetic"
-                    }}
-                ]
-                """
+        Return the response as a JSON array of objects.
 
-        
-        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+        Example of valid response:
+        [
+            {{
+                "title": "C++ Pointers Explained",
+                "url": "https://www.youtube.com/watch?v=DTxHyVn0ODg",
+                "type": "video",
+                "source": "freeCodeCamp",
+                "description": "Comprehensive video explaining pointers with visual examples"
+            }}
+        ]
+
+        DO NOT include resources from unknown or unreliable sources.
+        DO NOT include URLs that are not fully qualified with http:// or https://.
+        """
+
+        model = genai.GenerativeModel('gemini-2.5-pro', generation_config={"response_mime_type": "application/json"})
         response = model.generate_content(prompt)
         
         # Parse the AI response
@@ -1291,21 +1233,41 @@ def get_cpp_remedial_resources(topic_name, score_percentage, wrong_answers=None)
         # Validate and format the resources
         formatted_resources = []
         for resource in ai_resources:
-            if all(key in resource for key in ['title', 'url', 'type', 'source', 'description']):
-                formatted_resources.append({
-                    'title': resource['title'],
-                    'url': resource['url'],
-                    'type': resource['type'],
-                    'source': resource['source'],
-                    'description': resource['description']
-                })
+            # Validate required fields
+            if not all(key in resource for key in ['title', 'url', 'type', 'source', 'description']):
+                continue
+                
+            # Validate URL format
+            url = resource['url'].strip()
+            if not url.startswith(('http://', 'https://')):
+                # Try to fix common URL issues
+                if url.startswith('www.'):
+                    url = 'https://' + url
+                else:
+                    # Skip invalid URLs
+                    continue
+            
+            # Validate the resource is from a trusted source
+            trusted_sources = ['freecodecamp', 'w3schools', 'geeksforgeeks', 
+                               'programiz', 'microsoft', 'youtube']
+            source_lower = resource['source'].lower()
+            if not any(trusted_source in source_lower for trusted_source in trusted_sources):
+                continue
+            
+            formatted_resources.append({
+                'title': resource['title'],
+                'url': url,
+                'type': resource['type'],
+                'source': resource['source'],
+                'description': resource['description']
+            })
         
         return formatted_resources[:5]  # Return max 5 resources
         
     except Exception as e:
-        # Fallback to curated resources if AI fails
         logger.error(f"AI resource generation failed: {str(e)}")
-        return get_curated_cpp_resources(topic_name, score_percentage)
+        # Return empty array instead of fallback to avoid poor recommendations
+        return []
 
 def get_curated_cpp_resources(topic_name, score_percentage):
     """Curated fallback resources when AI generation fails"""
@@ -1434,8 +1396,11 @@ def generate_ai_feedback(topic, user_answers, score, passed, remedial_resources)
                     'user_answer': user_selected_option
                 })
     
-    # Format remedial resources for the prompt
-    resource_list = "\n".join([f"- {r['title']} ({r['source']}): {r['url']}" for r in remedial_resources])
+    # Only include resources in the prompt if the student failed
+    resource_context = ""
+    if not passed and remedial_resources:
+        resource_list = "\n".join([f"- {r['title']} ({r['source']}): {r['url']}" for r in remedial_resources])
+        #resource_context = f"\n\nRecommended resources:\n{resource_list}"
     
     # Include wrong answers in the prompt for more specific feedback
     wrong_answers_context = ""
@@ -1450,17 +1415,14 @@ def generate_ai_feedback(topic, user_answers, score, passed, remedial_resources)
     Analyze the student's quiz performance on the topic "{topic.title}" and provide personalized feedback.
     The student scored {score}% and {'passed' if passed else 'did not pass'}.{wrong_answers_context}
     
-    Recommended resources:
-    {resource_list}
-    
     Provide feedback that:
-    1. Starts with an encouraging tone, start with whether they did good or bad
-    2. Highlights what they did well
+    1. Tell the user whether they did well or need improvement
+    2. Highlights what they did well (if anything)
     3. Explains key areas for improvement based on their wrong answers
-    4. Recommends specific resources to review based on their mistakes
-    5. Ends with motivational closing
+    4. Ends with motivational closing
     
-    Keep the response under 250 words.
+    Keep the response under 200 words.
+   
     """
     
     try:
@@ -1471,9 +1433,13 @@ def generate_ai_feedback(topic, user_answers, score, passed, remedial_resources)
         logger.error(f"AI feedback generation failed: {str(e)}")
         # Fallback feedback
         if passed:
-            return f"Great job! You scored {score}% and passed this quiz on {topic.title}."
+            return f"Great job! You scored {score}% and passed this quiz on {topic.title}. You've demonstrated a good understanding of the material."
         else:
-            return f"You scored {score}% on {topic.title}. Review the material and try again. Recommended resources: {', '.join([r['title'] for r in remedial_resources])}"
+            if remedial_resources:
+                resource_list = ", ".join([r['title'] for r in remedial_resources])
+                return f"You scored {score}% on {topic.title}. Review the material and try again. Recommended resources: {resource_list}"
+            else:
+                return f"You scored {score}% on {topic.title}. Review the material and try again. Focus on understanding the concepts you missed."
 
 
 @require_POST
@@ -1566,6 +1532,16 @@ def regenerate_topic(request):
         regenerated_topic = regenerate_simpler_topic(topic, request.user, score_percentage, wrong_answers)
         
         if regenerated_topic:
+            # Verify the regenerated topic has a proper quiz
+            if not hasattr(regenerated_topic, 'quiz') or regenerated_topic.quiz.questions.count() < 4:
+                logger.error(f"Regenerated topic {regenerated_topic.id} missing proper quiz")
+                # Delete the invalid topic and return error
+                regenerated_topic.delete()
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Failed to generate a proper quiz for the simplified lesson. Please contact support.'
+                })
+                
             logger.info("Successfully regenerated topic with ID: %s", regenerated_topic.id)
             return JsonResponse({
                 'success': True, 
@@ -1573,13 +1549,13 @@ def regenerate_topic(request):
                 'message': 'Simplified topic generated successfully.'
             })
         else:
-            error_msg = 'Failed to generate simplified topic.'
+            error_msg = 'Failed to generate simplified topic. Please contact support.'
             logger.error(error_msg)
             return JsonResponse({'success': False, 'error': error_msg}, status=500)
             
     except Exception as e:
         logger.exception("Exception in regenerate_topic")
-        return JsonResponse({'success': False, 'error': 'Internal server error.'}, status=500)
+        return JsonResponse({'success': False, 'error': 'Internal server error. Please contact support.'}, status=500)
     
 def create_reinforcement_topic(course, student):
     """
@@ -1738,6 +1714,12 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
         
         {difficulty_analysis}
         
+        NON-NEGOTIABLE REQUIREMENTS:
+        1. MUST include a quiz with exactly 4 questions
+        2. Each question MUST have exactly 4 answer options (A, B, C, D)
+        3. Only one correct answer per question
+        4. Questions must test understanding of the simplified content
+        
         Please generate a new version that:
         1. Is at a {complexity} level
         2. Uses simpler language and more concrete examples
@@ -1745,8 +1727,7 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
         4. Includes {examples_multiplier}x more examples than the original
         5. Breaks down complex concepts into smaller, more digestible parts
         6. Uses analogies and real-world examples where appropriate
-        
-        Also generate a simpler quiz with 4 questions that focus on the core concepts.
+        7. INCLUDES A QUIZ WITH EXACTLY 4 QUESTIONS - THIS IS REQUIRED
         
         Respond with JSON in this format:
         {{
@@ -1757,16 +1738,19 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
                     {{
                         "question_text": "...",
                         "answers": [
-                            {{ "answer_text": "...", "option_key": "A" }},
-                            {{ "answer_text": "...", "option_key": "B" }},
-                            {{ "answer_text": "...", "option_key": "C" }},
-                            {{ "answer_text": "...", "option_key": "D" }}
+                            {{ "answer_text": "...", "option_key": "A", "is_correct": false }},
+                            {{ "answer_text": "...", "option_key": "B", "is_correct": true }},
+                            {{ "answer_text": "...", "option_key": "C", "is_correct": false }},
+                            {{ "answer_text": "...", "option_key": "D", "is_correct": false }}
                         ],
                         "correct_answer_key": "B"
                     }}
+                    // ... 3 more questions
                 ]
             }}
         }}
+        
+        FAILURE TO INCLUDE A PROPER QUIZ WILL MAKE THE LESSON USELESS.
         """
         
         model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
@@ -1789,6 +1773,16 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
             else:
                 logger.error(f"Could not extract JSON from AI response: {response.text}")
                 return None
+        
+        # Validate that the topic has a quiz with at least 4 questions
+        if 'quiz' not in topic_data or 'questions' not in topic_data['quiz']:
+            logger.error("AI response missing quiz")
+            return None
+        
+        questions = topic_data['quiz'].get('questions', [])
+        if len(questions) < 4:
+            logger.error(f"AI generated only {len(questions)} questions, need 4")
+            return None
         
         # Create a new chapter for the regenerated topic
         original_chapter = original_topic.chapter
@@ -1817,30 +1811,34 @@ def regenerate_simpler_topic(original_topic, student, score_percentage, wrong_an
             original_topic=original_topic
         )
         
-        # Create quiz if provided
-        if 'quiz' in topic_data and topic_data['quiz'].get('questions'):
-            quiz = GeneratedQuiz.objects.create(topic=regenerated_topic)
-            for q_idx, question_data in enumerate(topic_data['quiz']['questions']):
-                question = GeneratedQuestion.objects.create(
-                    quiz=quiz,
-                    question_text=question_data.get('question_text', f'Question {q_idx+1}'),
-                    order=q_idx
-                )
-                for a_idx, answer_data in enumerate(question_data.get('answers', [])):
-                    is_correct = answer_data.get('option_key') == question_data.get('correct_answer_key')
-                    GeneratedAnswer.objects.create(
-                        question=question,
-                        answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
-                        option_key=answer_data.get('option_key', chr(65+a_idx)),
-                        is_correct=is_correct,
-                        order=a_idx
-                    )
+        # Create quiz
+        quiz = GeneratedQuiz.objects.create(topic=regenerated_topic)
         
-        # Log the regeneration - FIXED: Use student.pk instead of student.id
+        # Create questions and answers
+        for q_idx, question_data in enumerate(topic_data['quiz']['questions']):
+            question = GeneratedQuestion.objects.create(
+                quiz=quiz,
+                question_text=question_data.get('question_text', f'Question {q_idx+1}'),
+                order=q_idx
+            )
+            
+            # Create answers
+            answers = question_data.get('answers', [])
+            for a_idx, answer_data in enumerate(answers):
+                is_correct = answer_data.get('option_key') == question_data.get('correct_answer_key')
+                GeneratedAnswer.objects.create(
+                    question=question,
+                    answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
+                    option_key=answer_data.get('option_key', chr(65+a_idx)),
+                    is_correct=is_correct,
+                    order=a_idx
+                )
+        
+        # Log the regeneration
         logger.info(f"Regenerated topic {original_topic.id} for student {student.pk} with score {score_percentage}%")
         
         return regenerated_topic
         
     except Exception as e:
         logger.error(f"Error regenerating topic: {str(e)}")
-        return None    
+        return None

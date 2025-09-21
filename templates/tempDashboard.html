@@ -1558,3 +1558,75 @@ window.onclick = function(event) {
 </body>
 
 </html>
+
+def generate_adapted_topic(original_topic, performance_score):
+    """Generate an adapted version of a topic based on performance"""
+    try:
+        # Determine complexity level based on performance
+        if performance_score < 50:
+            complexity = "very basic"
+        elif performance_score < 70:
+            complexity = "basic"
+        else:
+            return original_topic  # No adaptation needed
+        
+        prompt = f"""
+        Create a {complexity} version of the following C++ lesson for a student who scored {performance_score}% on the previous lesson.
+        
+        Original Lesson: {original_topic.title}
+        Original Content: {original_topic.content[:1000]}...
+        
+        Please create a simplified version that:
+        1. Uses simpler language and more examples
+        2. Focuses on core concepts
+        3. Breaks down complex ideas into smaller steps
+        4. Includes practical examples
+        
+        Respond with JSON containing:
+        - title: Adapted title
+        - content: Simplified content
+        - quiz: Simplified quiz with 3 questions
+        """
+        
+        # Generate content using AI
+        model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
+        response = model.generate_content(prompt)
+        
+        # Parse and create adapted topic
+        adapted_data = json.loads(response.text)
+        
+        # Create adapted topic
+        adapted_topic = GeneratedTopic.objects.create(
+            chapter=original_topic.chapter,
+            title=adapted_data.get('title', f"Simplified: {original_topic.title}"),
+            content=adapted_data.get('content', ''),
+            order=original_topic.order,
+            is_regenerated=True,
+            original_topic=original_topic
+        )
+        
+        # Create adapted quiz if provided
+        if 'quiz' in adapted_data:
+            quiz = GeneratedQuiz.objects.create(topic=adapted_topic)
+            
+            for q_idx, question_data in enumerate(adapted_data['quiz'].get('questions', [])):
+                question = GeneratedQuestion.objects.create(
+                    quiz=quiz,
+                    question_text=question_data.get('question_text', f'Question {q_idx+1}'),
+                    order=q_idx
+                )
+                
+                for a_idx, answer_data in enumerate(question_data.get('answers', [])):
+                    GeneratedAnswer.objects.create(
+                        question=question,
+                        answer_text=answer_data.get('answer_text', f'Answer {a_idx+1}'),
+                        option_key=answer_data.get('option_key', chr(65 + a_idx)),
+                        is_correct=answer_data.get('is_correct', False),
+                        order=a_idx
+                    )
+        
+        return adapted_topic
+        
+    except Exception as e:
+        logger.error(f"Error generating adapted topic: {str(e)}")
+        return original_topic  # Fallback to original"""

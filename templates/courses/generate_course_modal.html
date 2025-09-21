@@ -9,8 +9,7 @@
         <div class="modal-body">
             
             <form id="generate-course-form">
-                {% csrf_token %}
-                
+                {% csrf_token %}                
                 <div class="form-group">
                     <label for="difficulty-level">Select Your knowledge Level</label>
                     <select id="difficulty-level" name="level" class="form-control" required onchange="loadLessonsByDifficulty(this.value)">
@@ -46,7 +45,6 @@
                     <div class="form-group">
                         <label for="chapter-count" style="display: none;">Number of Chapters</label>
                         <input type="hidden" id="chapter-count" name="noOfChapters" value="1">
-                        <small class="help-text">Each lesson will be treated as an individual learning unit</small>
                     </div>
                     
                     <!-- Hidden field for includeVideo -->
@@ -222,11 +220,11 @@ const LESSONS_BY_LEVEL = {
         "Control Flow and Functions",
         "Arrays and Strings",
         "Setting Up Development Environment",
-        "Basic Input/Output Operations"  // Replaced "Basic Memory Management"
+        "Basic Input/Output Operations"  
     ],
     moderate: [
         "Object-Oriented Programming Concepts",
-        "Basic Memory Management",  // Added to moderate level
+        "Basic Memory Management", 
         "Advanced Pointers and Memory",
         "Inheritance and Polymorphism",
         "Exception Handling",
