@@ -476,7 +476,7 @@ def generate_course(request):
         
         for attempt in range(max_retries):
             try:
-                model = genai.GenerativeModel('gemini-2.5-pro', generation_config={"response_mime_type": "application/json"})
+                model = genai.GenerativeModel('gemini-2.5-flash', generation_config={"response_mime_type": "application/json"})
                 response = model.generate_content(prompt)
                 logger.info(f"AI response received (first 500 chars): {response.text[:500]}")
 
@@ -880,7 +880,6 @@ def complete_generated_topic(request, topic_id=None):
         data = json.loads(request.body)
         topic_id = data.get('topic_id')
         user_answers = data.get('answers', {})
-        is_retry = data.get('is_retry', False)
 
         if not topic_id:
             return JsonResponse({'success': False, 'error': 'Topic ID is required.'}, status=400)
@@ -888,79 +887,87 @@ def complete_generated_topic(request, topic_id=None):
         topic = get_object_or_404(GeneratedTopic, id=topic_id)
         student = request.user
         course = topic.chapter.course
-        
-        # Calculate quiz score
+
+        # --- Calculate quiz score ---
         correct_answers_count = 0
         total_questions = topic.quiz.questions.count() if hasattr(topic, 'quiz') else 0
-        
+        wrong_answers = []
+
         if total_questions > 0:
             for question in topic.quiz.questions.all():
                 try:
                     correct_answer = question.answers.get(is_correct=True)
                     user_selected_option = user_answers.get(str(question.id))
-                    
+
                     if user_selected_option == correct_answer.option_key:
                         correct_answers_count += 1
+                    else:
+                        wrong_answers.append({
+                            'question_id': question.id,
+                            'selected': user_selected_option,
+                            'correct': correct_answer.option_key
+                        })
                 except GeneratedAnswer.DoesNotExist:
                     continue
-        
+
         score_percentage = int((correct_answers_count / total_questions) * 100) if total_questions > 0 else 100
-        
-        # Check if student passed (50% or higher)
+
+        # --- Check if student passed (50% or higher) ---
         passed = score_percentage >= 50
-        
-        # Get or create completion record
+
+        # --- Get or create completion record ---
         try:
             completion = GeneratedTopicCompletion.objects.get(student=student, topic=topic)
-            # Update existing record
             completion.score = score_percentage
             completion.passed = passed
-            completion.attempt_count += 1  # Manual increment
+            completion.attempt_count += 1  # manual increment, safe here
+            completion.wrong_answers = wrong_answers
             completion.save()
         except GeneratedTopicCompletion.DoesNotExist:
-            # Create new record
             completion = GeneratedTopicCompletion.objects.create(
                 student=student,
                 topic=topic,
                 score=score_percentage,
                 passed=passed,
-                attempt_count=1
+                attempt_count=1,
+                wrong_answers=wrong_answers
             )
-        
-        # Update overall course progress (only count passed topics)
+
+        # --- Update overall course progress (only passed topics) ---
         total_topics = GeneratedTopic.objects.filter(chapter__course=course).count()
         completed_topics = GeneratedTopicCompletion.objects.filter(
             student=student,
             topic__chapter__course=course,
             passed=True
         ).count()
-        
         course_progress = int((completed_topics / total_topics) * 100) if total_topics > 0 else 0
-        
-        # Get specific C++ remedial resources with wrong answers
+
+        # --- Get remedial resources & AI feedback ---
         remedial_resources = get_cpp_remedial_resources(topic.title, score_percentage)
-        
-        # Generate AI feedback
         ai_feedback = generate_ai_feedback(topic, user_answers, score_percentage, passed, remedial_resources)
 
-        # Find next topic based on performance
+        # --- Adaptive progression ---
         next_topic = None
+        regenerated_topic_id = None
+
         if passed:
-            # Find next topic in sequence
+            # Next topic in sequence
             all_topics = GeneratedTopic.objects.filter(chapter__course=course).order_by('order')
             current_index = None
             for idx, t in enumerate(all_topics):
                 if t.id == topic.id:
                     current_index = idx
                     break
-            
+
             if current_index is not None and current_index < len(all_topics) - 1:
                 next_topic = all_topics[current_index + 1]
-                
-                # If performance was poor, adapt the next topic
-                #if score_percentage < 70:
-                    #next_topic = generate_adapted_topic(next_topic, score_percentage)
-        
+        else:
+            # Generate simplified lesson automatically
+            regenerated_topic = regenerate_simpler_topic(topic, student, score_percentage, wrong_answers)
+            if regenerated_topic:
+                regenerated_topic_id = regenerated_topic.id
+
+        # --- Response payload ---
         response_data = {
             'success': True,
             'passed': passed,
@@ -969,16 +976,17 @@ def complete_generated_topic(request, topic_id=None):
             'course_progress': course_progress,
             'remedial_resources': remedial_resources,
             'course_id': course.id,
+            'regenerated_topic_id': regenerated_topic_id,
         }
-        
         if next_topic:
             response_data['next_topic_id'] = next_topic.id
-            
+
         return JsonResponse(response_data)
 
     except Exception as e:
         logger.error(f"Error in complete_generated_topic: {str(e)}")
         return JsonResponse({'success': False, 'error': str(e)}, status=500)
+
 
     
     

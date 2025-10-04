@@ -1464,7 +1464,7 @@
         </div>
     </footer>
 
-    <script>
+   <script>
 // Add this function to handle cases where a quiz might be missing
 function checkQuizAvailability() {
     const quizForm = document.getElementById('quiz-form');
@@ -1490,14 +1490,6 @@ function showNoQuizMessage() {
         <div class="alert alert-warning">
             <h4><i class="fas fa-exclamation-triangle me-2"></i>Quiz Not Available</h4>
             <p>This lesson doesn't have a quiz yet. This is required to progress to the next lesson.</p>
-            <div class="mt-3">
-                <button class="btn btn-primary me-2" onclick="regenerateSimplerLesson(${courseId}, ${topicId})">
-                    <i class="fas fa-redo me-2"></i>Regenerate Lesson with Quiz
-                </button>
-                <button class="btn btn-secondary" onclick="location.reload()">
-                    <i class="fas fa-sync me-2"></i>Refresh Page
-                </button>
-            </div>
         </div>
     `;
 }
@@ -1509,10 +1501,7 @@ function showIncompleteQuizMessage(questionCount) {
     quizSection.innerHTML += `
         <div class="alert alert-danger mt-3">
             <h4><i class="fas fa-exclamation-circle me-2"></i>Incomplete Quiz</h4>
-            <p>This quiz only has ${questionCount} questions (4 are required). You may need to regenerate the lesson.</p>
-            <button class="btn btn-warning mt-2" onclick="regenerateSimplerLesson(${courseId}, ${topicId})">
-                <i class="fas fa-graduation-cap me-2"></i>Get Complete Lesson
-            </button>
+            <p>This quiz only has ${questionCount} questions (4 are required). Please contact support or retry later.</p>
         </div>
     `;
 }
@@ -1523,12 +1512,10 @@ document.addEventListener('DOMContentLoaded', function() {
     const sidebar = document.getElementById('sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
     
-    // Toggle sidebar function
     function toggleSidebar() {
         sidebar.classList.toggle('active');
         sidebarOverlay.classList.toggle('active');
         
-        // Change icon based on state
         if (sidebar.classList.contains('active')) {
             mobileToggle.innerHTML = '<i class="fas fa-times"></i>';
         } else {
@@ -1536,11 +1523,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // Add event listeners
-    mobileToggle.addEventListener('click', toggleSidebar);
-    sidebarOverlay.addEventListener('click', toggleSidebar);
+    if (mobileToggle) {
+        mobileToggle.addEventListener('click', toggleSidebar);
+    }
+    if (sidebarOverlay) {
+        sidebarOverlay.addEventListener('click', toggleSidebar);
+    }
     
-    // Close sidebar when clicking on a module item (mobile only)
     if (window.innerWidth < 768) {
         document.querySelectorAll('.module-item').forEach(item => {
             item.addEventListener('click', function() {
@@ -1553,20 +1542,18 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 
+// ✅ NEW validateQuiz with automatic adaptation
 async function validateQuiz() {
-    // Check if quiz is available and complete
     if (!checkQuizAvailability()) {
         return;
     }
     
     const quizForm = document.getElementById('quiz-form');
     const topicId = quizForm.dataset.topicId;
-    const isRegenerated = quizForm.dataset.isRegenerated === 'true';
     const submitBtn = document.getElementById('quiz-submit-btn');
     const feedbackDiv = document.getElementById('quiz-feedback');
     const resultsDiv = document.getElementById('quiz-results');
     
-    // Collect answers
     const userAnswers = {};
     let allAnswered = true;
     
@@ -1588,7 +1575,6 @@ async function validateQuiz() {
         return;
     }
     
-    // Disable submit button to prevent multiple submissions
     submitBtn.disabled = true;
     submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Submitting...';
     
@@ -1601,75 +1587,33 @@ async function validateQuiz() {
             },
             body: JSON.stringify({
                 topic_id: parseInt(topicId),
-                answers: userAnswers,
-                is_retry: window.isRetryAttempt || false
+                answers: userAnswers
             })
         });
         
         const data = await response.json();
         
-         if (data.success) {
-            // Show results section
+        if (data.success) {
             resultsDiv.style.display = 'block';
             
-            // Display feedback based on pass/fail status
             if (data.passed) {
                 feedbackDiv.innerHTML = `
                     <div class="alert alert-success">
                         <h4>Congratulations! You passed with ${data.score}%</h4>
                         <p>${data.ai_feedback}</p>
                     </div>
+                    <div class="text-center mt-3">
+                        <button class="btn btn-primary" onclick="proceedToNextTopic(${data.course_id}, ${data.next_topic_id})">
+                            Continue to Next Lesson <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
                 `;
-                
-                // Show next topic button after a delay
-                setTimeout(() => {
-                    if (data.next_topic_id) {
-                        const nextBtn = document.createElement('a');
-                        nextBtn.href = `/learning/?generated_course_id=${data.course_id}&topic_id=${data.next_topic_id}`;
-                        nextBtn.className = 'btn btn-primary mt-3';
-                        nextBtn.innerHTML = 'Continue to Next Topic <i class="fas fa-arrow-right"></i>';
-                        feedbackDiv.appendChild(nextBtn);
-                    } else {
-                        const completeBtn = document.createElement('a');
-                        completeBtn.href = '/dashboard';
-                        completeBtn.className = 'btn btn-success mt-3';
-                        completeBtn.innerHTML = 'Course Completed! Return to Dashboard';
-                        feedbackDiv.appendChild(completeBtn);
-                    }
-                }, 3000);
             } else {
-                // Student failed - show appropriate options based on whether this is a regenerated topic
-                let retryHtml = '';
-                
-                if (isRegenerated) {
-                    // For regenerated topics, only show retry option
-                    retryHtml = `
-                        <div class="mt-3 d-flex gap-2 justify-content-center flex-wrap">
-                            <button class="btn btn-primary" onclick="retryQuiz()">
-                                <i class="fas fa-redo me-2"></i>Retry Quiz
-                            </button>
-                        </div>
-                    `;
-                } else {
-                    // For original topics, show both retry and regenerate options
-                    retryHtml = `
-                        <div class="mt-3 d-flex gap-2 justify-content-center flex-wrap">
-                            <button class="btn btn-primary" onclick="retryQuiz()">
-                                <i class="fas fa-redo me-2"></i>Retry Same Quiz
-                            </button>
-                            <button class="btn btn-warning" onclick="regenerateSimplerLesson({{ course.id }}, ${topicId})">
-                                <i class="fas fa-graduation-cap me-2"></i>Get Simpler Lesson
-                            </button>
-                        </div>
-                    `;
-                }
-                
-                // Show remedial resources
                 let resourcesHtml = '';
                 if (data.remedial_resources && data.remedial_resources.length > 0) {
                     resourcesHtml = `
-                        <div class="mt-4">
-                            <h5>Recommended Resources to Improve Your Understanding:</h5>
+                        <div class="mt-3">
+                            <h5>Recommended Resources:</h5>
                             <ul class="list-group">
                                 ${data.remedial_resources.map(resource => `
                                     <li class="list-group-item">
@@ -1686,110 +1630,71 @@ async function validateQuiz() {
                 
                 feedbackDiv.innerHTML = `
                     <div class="alert alert-warning">
-                        <h4>You scored ${data.score}% - Review Needed</h4>
+                        <h4>You scored ${data.score}% - Let's try a different approach</h4>
                         <p>${data.ai_feedback}</p>
-                        <p class="mt-3">You need to score at least 50% to proceed to the next lesson.</p>
                         ${resourcesHtml}
-                        ${retryHtml}
+                        <div class="text-center mt-3">
+                            <button class="btn btn-primary" onclick="proceedToAdaptedLesson(${data.course_id}, ${data.regenerated_topic_id})">
+                                Okay, let's continue <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
                     </div>
                 `;
             }
-            feedbackDiv.style.display = 'block';
             
         } else {
             feedbackDiv.innerHTML = `<div class="alert alert-danger">Error: ${data.error}</div>`;
-            feedbackDiv.style.display = 'block';
-            submitBtn.disabled = false;
-            submitBtn.innerHTML = 'Submit Quiz';
         }
+        
+        feedbackDiv.style.display = 'block';
+        
     } catch (error) {
         console.error('Error:', error);
         feedbackDiv.innerHTML = '<div class="alert alert-danger">An error occurred. Please try again.</div>';
         feedbackDiv.style.display = 'block';
+    } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = 'Submit Quiz';
     }
 }
 
-function retryQuiz() {
-    console.log('Retry quiz clicked');
-    // Set flag to indicate this is a retry attempt
-    window.isRetryAttempt = true;
-    
-    // Reload the page to retry the same quiz
-    window.location.reload();
-}
-
-async function regenerateSimplerLesson(courseId, topicId) {
-    console.log('Regenerate simpler lesson clicked', courseId, topicId);
-    
-    // Show loading state
-    const button = event.target;
-    const originalText = button.innerHTML;
-    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Generating...';
-    button.disabled = true;
-    
-    try {
-        const csrfToken = getCookie('csrftoken');
-        if (!csrfToken) {
-            throw new Error('CSRF token not found');
-        }
-        
-        console.log('CSRF token found');
-        
-        const response = await fetch('/api/regenerate-topic/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': csrfToken,
-            },
-            body: JSON.stringify({
-                course_id: courseId,
-                topic_id: topicId
-            })
-        });
-        
-        console.log('Response status:', response.status);
-        
-        // Check if response is JSON
-        const contentType = response.headers.get('content-type');
-        if (!contentType || !contentType.includes('application/json')) {
-            const text = await response.text();
-            console.error('Non-JSON response:', text);
-            throw new Error('Server returned non-JSON response: ' + text);
-        }
-        
-        const data = await response.json();
-        console.log('Regenerate response:', data);
-        
-        if (data.success) {
-            // Show success message before redirecting
-            showToast('Simplified lesson generated successfully! Redirecting...', 'success');
-            
-            // Redirect to the regenerated topic after a brief delay
-            setTimeout(() => {
-                window.location.href = `/learning/?generated_course_id=${courseId}&topic_id=${data.regenerated_topic_id}`;
-            }, 1500);
-        } else {
-            showToast('Error: ' + data.error, 'error');
-            // Optionally, offer to retry the same quiz
-            if (confirm('Would you like to retry the same quiz instead?')) {
-                retryQuiz();
-            }
-        }
-    } catch (error) {
-        console.error('Detailed error:', error);
-        showToast('An error occurred: ' + error.message, 'error');
-    } finally {
-        // Restore button state
-        button.innerHTML = originalText;
-        button.disabled = false;
+// ✅ Navigate to next topic
+function proceedToNextTopic(courseId, nextTopicId) {
+    if (nextTopicId) {
+        window.location.href = `/learning/?generated_course_id=${courseId}&topic_id=${nextTopicId}`;
+    } else {
+        window.location.href = '/dashboard';
     }
 }
 
-// Add a toast notification function
+// ✅ Navigate to regenerated simpler topic
+function proceedToAdaptedLesson(courseId, regeneratedTopicId) {
+    if (regeneratedTopicId) {
+        window.location.href = `/learning/?generated_course_id=${courseId}&topic_id=${regeneratedTopicId}`;
+    } else {
+        showToast('Unable to generate adapted content. Please try again.', 'error');
+        window.location.reload();
+    }
+}
+
+// Helper: CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.startsWith(name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Toast notifications
 function showToast(message, type = 'info') {
-    // Remove any existing toasts
     const existingToasts = document.querySelectorAll('.custom-toast');
     existingToasts.forEach(toast => toast.remove());
     
@@ -1811,7 +1716,6 @@ function showToast(message, type = 'info') {
     
     document.body.appendChild(toast);
     
-    // Auto remove after 5 seconds
     setTimeout(() => {
         if (toast.parentNode) {
             toast.parentNode.removeChild(toast);
@@ -1819,44 +1723,18 @@ function showToast(message, type = 'info') {
     }, 5000);
 }
 
-// Helper function to get CSRF token
-function getCookie(name) {
-    let cookieValue = null;
-    if (document.cookie && document.cookie !== '') {
-        const cookies = document.cookie.split(';');
-        for (let i = 0; i < cookies.length; i++) {
-            const cookie = cookies[i].trim();
-            if (cookie.startsWith(name + '=')) {
-                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                break;
-            }
-        }
-    }
-    return cookieValue;
-}
-
-// Function to retry the same quiz
-function retryQuiz() {
-    // Set flag to indicate this is a retry attempt
-    window.isRetryAttempt = true;
-    
-    // Reload the page to retry the same quiz
-    window.location.reload();
-}
-
+// Hook form submit
 document.addEventListener('DOMContentLoaded', function() {
     setTimeout(checkQuizAvailability, 500);
     const quizForm = document.getElementById('quiz-form');
     if (quizForm) {
-        console.log('Quiz form found, adding event listener');
         quizForm.addEventListener('submit', function(event) {
             event.preventDefault();
             validateQuiz();
         });
-    } else {
-        console.log('Quiz form not found');
     }
 });
-    </script>
+</script>
+
 </body>
 </html>
